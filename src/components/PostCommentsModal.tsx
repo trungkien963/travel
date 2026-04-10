@@ -40,7 +40,7 @@ export function PostCommentsModal({ post, onClose, onAddComment }: PostCommentsM
                 post.comments.map(c => (
                   <View key={c.id} style={{flexDirection: 'row', gap: 12}}>
                     <View style={{width: 36, height: 36, borderRadius: 18, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center'}}>
-                       <Text style={{fontWeight: '900', color: '#059669', fontSize: 14}}>{c.authorName.charAt(0)}</Text>
+                       <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 14}}>{c.authorName.charAt(0)}</Text>
                     </View>
                     <View style={{flex: 1, backgroundColor: '#FBFBFB', padding: 14, borderRadius: 16}}>
                       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6}}>
@@ -64,7 +64,7 @@ export function PostCommentsModal({ post, onClose, onAddComment }: PostCommentsM
                 multiline
               />
               <TouchableOpacity onPress={handleSend} style={styles.sendBtn} disabled={!text.trim()}>
-                <Send size={20} color={text.trim() ? '#059669' : '#F0F0F0'} />
+                <Send size={20} color={text.trim() ? '#FFC800' : '#F0F0F0'} />
               </TouchableOpacity>
             </View>
           </View>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon, Heart, MessageCircle, Share2, Pencil, Camera as CameraIcon } from 'lucide-react-native';
+import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon, Heart, MessageCircle, Share2, Pencil, Camera as CameraIcon, Download } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { MOCK_MEMBERS } from '../../src/constants/mockData';
@@ -9,14 +9,15 @@ import { useTrip } from '../../src/hooks/useTrip';
 import { useSocial } from '../../src/hooks/useSocial';
 import { useExpenses } from '../../src/hooks/useExpenses';
 import { useBalances } from '../../src/hooks/useBalances';
-import { ExpenseLogModal } from '../../src/components/ExpenseLogModal';
+import { ExpenseLogModal, getCategoryIcon } from '../../src/components/ExpenseLogModal';
 import { ExpenseDetailModal } from '../../src/components/ExpenseDetailModal';
 import { MemberModal } from '../../src/components/MemberModal';
 import { PostCommentsModal } from '../../src/components/PostCommentsModal';
 import { CreatePostModal } from '../../src/components/CreatePostModal';
 import { DailySummaryModal } from '../../src/components/DailySummaryModal';
+import { TripFormModal } from '../../src/components/TripFormModal';
 import { PostItem } from '../../src/components/PostItem';
-import { Expense, Member } from '../../src/types/expense';
+import { Expense, Member, ExpenseCategory, CATEGORY_COLORS } from '../../src/types/expense';
 import { Post } from '../../src/types/social';
 
 export default function TripDetailsScreen() {
@@ -25,7 +26,7 @@ export default function TripDetailsScreen() {
 
   const [activeTab, setActiveTab] = useState('SOCIAL');
   
-  const { trip, isOwner, currentUserId, addMember, editMember, removeMember } = useTrip(id as string);
+  const { trip, isOwner, currentUserId, addMember, editMember, removeMember, updateTrip } = useTrip(id as string);
   const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial();
   const { expenses, saveExpense, deleteExpense } = useExpenses();
   const { netBalances, debts } = useBalances(expenses, trip?.members || []);
@@ -41,6 +42,7 @@ export default function TripDetailsScreen() {
   const [isCreatePostVisible, setCreatePostVisible] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isTripModalVisible, setTripModalVisible] = useState(false);
 
   const aprilDates = Array.from({length: 30}, (_, i) => `2026-04-${String(i+1).padStart(2,'0')}`);
 
@@ -84,13 +86,68 @@ export default function TripDetailsScreen() {
     setMemberModalVisible(false);
   };
 
-  const handleSavePost = (content: string, images: string[]) => {
+  const handleSavePost = (content: string, images: string[], expenseData?: Expense) => {
     if (editingPost) {
       editPost(editingPost.id, content, images);
     } else {
       addPost(content, images, currentUserId, 'You (Edric)');
     }
+
+    if (expenseData) {
+      saveExpense(expenseData, false);
+    }
   };
+
+  const handleSaveTrip = (tripData: any) => {
+    const updatedMembers = tripData.members.map((nameOrEmail: string, idx: number) => {
+      const existing = trip?.members.find(m => m.name === nameOrEmail || m.email === nameOrEmail);
+      if (existing) return existing;
+      return { id: `m_${Date.now()}_${idx}`, name: nameOrEmail };
+    });
+
+    const formatShortDate = (isoString: string) => {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return "Unknown";
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${months[d.getMonth()]} ${d.getDate()}`;
+    };
+
+    const formattedData = {
+       title: tripData.title,
+       coverImage: tripData.coverImage,
+       startDate: formatShortDate(tripData.startDate),
+       endDate: formatShortDate(tripData.endDate),
+       members: updatedMembers
+    };
+    
+    updateTrip(formattedData);
+  };
+
+  // Calculate actual personal share based on splits securely!
+  const totalTripCost = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const yourShare = expenses.reduce((sum, e) => {
+    if (e.splits && Object.keys(e.splits).length > 0) {
+      return sum + (e.splits[currentUserId] || 0);
+    }
+    // fallback if expense lacks splits
+    return sum + Math.round(e.amount / (trip?.members.length || 1));
+  }, 0);
+
+  // Analytics Calculation
+  const categoryTotals: Record<string, number> = {};
+  let totalExpensesForChart = 0;
+  expenses.forEach(e => {
+    const cat = e.category || 'OTHER';
+    categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount;
+    totalExpensesForChart += e.amount;
+  });
+
+  const chartData = Object.keys(categoryTotals).map(cat => ({
+    category: cat,
+    amount: categoryTotals[cat],
+    percent: (categoryTotals[cat] / totalExpensesForChart) * 100,
+    color: CATEGORY_COLORS[cat as ExpenseCategory] || '#9CA3AF'
+  })).sort((a,b) => b.amount - a.amount);
 
   return (
     <View style={styles.container}>
@@ -99,26 +156,33 @@ export default function TripDetailsScreen() {
         {/* Header Cover Image Area */}
         <View style={styles.coverContainer}>
           <Image 
-            source={{ uri: trip?.coverImage || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1000' }} 
+            source={{ uri: trip?.coverImage || 'https://images.unsplash.com/photo-1473496169904-6a58eb22bf2f?q=80&w=1000' }} 
             style={styles.coverImage}
           />
-          <LinearGradient colors={['transparent', '#FBFBFB']} style={styles.bottomFader} />
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft color="#FFFFFF" size={24} />
           </TouchableOpacity>
+          {isOwner && (
+            <TouchableOpacity onPress={() => setTripModalVisible(true)} style={[styles.backButton, { left: undefined, right: 16 }]} hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}>
+              <Pencil color="#FFFFFF" size={22} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Clean Overlapping White Sheet */}
+        <View style={styles.sheetContainer}>
           <View style={styles.coverDetails}>
              {trip?.isPrivate && <View style={styles.privateBadge}><Text style={styles.privateBadgeText}>PRIVATE</Text></View>}
              <Text style={styles.title}>{trip?.title}</Text>
              <View style={styles.metaRow}>
-               <View style={styles.metaItem}><CalendarIcon size={14} color="#1C1917" /><Text style={styles.metaText}>{trip?.startDate} - {trip?.endDate}</Text></View>
-               <View style={styles.metaItem}><Users size={14} color="#1C1917" /><Text style={styles.metaText}>{trip?.members.length || 0} members</Text></View>
+               <View style={styles.metaItem}><CalendarIcon size={14} color="#A8A29E" /><Text style={styles.metaText}>{trip?.startDate} - {trip?.endDate}</Text></View>
+               <View style={styles.metaItem}><Users size={14} color="#A8A29E" /><Text style={styles.metaText}>{trip?.members.length || 0} members</Text></View>
              </View>
           </View>
-        </View>
 
         {/* Tab Navigation */}
-        <View style={styles.tabsWrapper}>
-           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingHorizontal: 8}}>
+         <View style={styles.tabsWrapper}>
+           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingHorizontal: 20, gap: 12}}>
              {['MOMENTS', 'SOCIAL', 'EXPENSES', 'BALANCES', 'MEMBERS'].map(tab => (
                <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}>
                  <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
@@ -160,7 +224,7 @@ export default function TripDetailsScreen() {
                        >
                          <Text style={[
                            styles.dateText, 
-                           isTripDay && { color: '#059669', fontWeight: '900' },
+                           isTripDay && { color: '#FFC800', fontWeight: '900' },
                            { marginBottom: dailyImages.length > 0 ? 4 : 0 }
                          ]}>{d}</Text>
                          
@@ -189,7 +253,7 @@ export default function TripDetailsScreen() {
                <View style={styles.transactionsHeader}>
                  <Text style={styles.transactionsTitle}>Trip Diary</Text>
                  <TouchableOpacity style={styles.logExpenseBtn} onPress={() => { setEditingPost(null); setCreatePostVisible(true); }}>
-                   <CameraIcon size={14} color="#FFF" />
+                   <CameraIcon size={16} color="#1C1917" />
                    <Text style={styles.logExpenseBtnText}>Chụp Ảnh</Text>
                  </TouchableOpacity>
                </View>
@@ -207,22 +271,22 @@ export default function TripDetailsScreen() {
                  />
                ))}
                <View style={{height: 100}} />
-             </View>
-           )}
+              </View>
+            )}
 
-           {activeTab === 'EXPENSES' && (
+            {activeTab === 'EXPENSES' && (
              <View>
                <View style={styles.summaryRow}>
                  <View style={styles.summaryBlockBlack}>
-                    <Text style={styles.summaryLabelLight}>TOTAL</Text>
+                    <Text style={styles.summaryLabelLight}>TOTAL TRIP</Text>
                     <Text style={styles.summaryValueLight} numberOfLines={1} adjustsFontSizeToFit>
-                       {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0).toString())} VND
+                       {formatCurrency(totalTripCost.toString())} VND
                     </Text>
                  </View>
                  <View style={styles.summaryBlockWhite}>
-                    <Text style={styles.summaryLabelDark}>PER PERSON</Text>
+                    <Text style={styles.summaryLabelDark}>YOUR SHARE</Text>
                     <Text style={styles.summaryValueDark} numberOfLines={1} adjustsFontSizeToFit>
-                       {formatCurrency(Math.round(expenses.reduce((sum, e) => sum + e.amount, 0) / MOCK_MEMBERS.length).toString())} VND
+                       {formatCurrency(yourShare.toString())} VND
                     </Text>
                  </View>
                </View>
@@ -252,7 +316,7 @@ export default function TripDetailsScreen() {
                        >
                          <View style={styles.expenseItemLeft}>
                            <View style={styles.expenseIconCircle}>
-                             <ImageIcon size={20} color="#059669" />
+                             {getCategoryIcon(exp.category, 20, exp.category ? CATEGORY_COLORS[exp.category] : CATEGORY_COLORS.OTHER)}
                            </View>
                            <View style={{flex: 1}}>
                              <Text style={styles.expenseItemDesc} numberOfLines={1}>{exp.desc}</Text>
@@ -270,8 +334,55 @@ export default function TripDetailsScreen() {
 
            {activeTab === 'BALANCES' && (
              <View>
-               <View style={styles.transactionsHeader}>
+               {totalExpensesForChart > 0 && (
+                 <View style={styles.chartCardWrapper}>
+                   <Text style={styles.chartTitle}>Spending Breakdown</Text>
+                   
+                   <View style={styles.chartBarWrapper}>
+                     {chartData.map((d, i) => (
+                       <View 
+                         key={`bar-${i}`} 
+                         style={[
+                           styles.chartBarSegment, 
+                           { width: `${d.percent}%`, backgroundColor: d.color },
+                           i === 0 && { borderTopLeftRadius: 100, borderBottomLeftRadius: 100 },
+                           i === chartData.length - 1 && { borderTopRightRadius: 100, borderBottomRightRadius: 100 }
+                         ]} 
+                       />
+                     ))}
+                   </View>
+
+                   <View style={styles.chartLegend}>
+                     {chartData.map((d, i) => (
+                       <View key={`leg-${i}`} style={styles.legendItem}>
+                         <View style={[styles.legendDot, { backgroundColor: d.color }]} />
+                         <View>
+                            <Text style={styles.legendText}>{d.category}</Text>
+                            <Text style={styles.legendAmount}>₫{formatCurrency(d.amount.toString())}</Text>
+                         </View>
+                       </View>
+                     ))}
+                   </View>
+                 </View>
+               )}
+
+               <View style={[styles.transactionsHeader, { alignItems: 'flex-start' }]}>
                  <Text style={styles.transactionsTitle}>Balances & Debts</Text>
+                 <TouchableOpacity 
+                   style={styles.exportBtn} 
+                   onPress={() => Alert.alert(
+                     'Export Report', 
+                     'Select the format you want to export your trip expenses to:',
+                     [
+                       { text: 'PDF Document', onPress: () => Alert.alert('Success', 'TripReport.pdf has been generated and ready to share.') },
+                       { text: 'Excel (CSV)', onPress: () => Alert.alert('Success', 'TripReport.csv has been generated and ready to share.') },
+                       { text: 'Cancel', style: 'cancel' }
+                     ]
+                   )}
+                 >
+                   <Download size={14} color="#1C1917" />
+                   <Text style={styles.exportBtnText}>Export</Text>
+                 </TouchableOpacity>
                </View>
 
                {debts.length === 0 ? (
@@ -291,7 +402,7 @@ export default function TripDetailsScreen() {
                              {isMeFrom ? (
                                <ArrowRight size={20} color="#DC2626" />
                              ) : isMeTo ? (
-                               <ArrowLeft size={20} color="#059669" />
+                               <ArrowLeft size={20} color="#FFC800" />
                              ) : (
                                <Users size={20} color="#1C1917" />
                              )}
@@ -305,7 +416,7 @@ export default function TripDetailsScreen() {
                              </Text>
                            </View>
                          </View>
-                         <Text style={[styles.expenseItemAmount, isMeFrom ? {color: '#DC2626'} : isMeTo ? {color: '#059669'} : {color: '#1C1917'}]}>
+                         <Text style={[styles.expenseItemAmount, isMeFrom ? {color: '#DC2626'} : isMeTo ? {color: '#FFC800'} : {color: '#1C1917'}]}>
                            ₫{formatCurrency(debt.amount.toString())}
                          </Text>
                        </View>
@@ -338,7 +449,7 @@ export default function TripDetailsScreen() {
                       <View key={member.id} style={styles.expenseItemCard}>
                          <View style={styles.expenseItemLeft}>
                            <View style={styles.expenseIconCircle}>
-                             <Text style={{fontWeight: '900', color: '#059669', fontSize: 16}}>
+                             <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 16}}>
                                {member.name.charAt(0)}
                              </Text>
                            </View>
@@ -388,10 +499,15 @@ export default function TripDetailsScreen() {
 
         {isOwner && (
           <View style={styles.gActions}>
-            <TouchableOpacity style={styles.publishBtn}><Text style={styles.publishBtnText}>Publish Trip</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.deleteBtn}><Trash2 size={18} color="#DC2626" /><Text style={styles.deleteBtnText}>Delete Trip</Text></TouchableOpacity>
+             <View style={{flexDirection: 'row', gap: 12}}>
+                <TouchableOpacity style={[styles.deleteBtn, {flex: 1, backgroundColor: '#FFC800', borderWidth: 0}]} onPress={() => Alert.alert('Published!', 'Your amazing adventure is now live on the Discover feed for the world to see.')}>
+                  <Text style={[styles.deleteBtnText, {color: '#1C1917'}]}>Publish Trip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.deleteBtn, {flex: 1}]}><Trash2 size={18} color="#DC2626" /><Text style={styles.deleteBtnText}>Delete Trip</Text></TouchableOpacity>
+             </View>
           </View>
         )}
+        </View>
       </ScrollView>
 
       {/* Extracted Modals */}
@@ -431,6 +547,7 @@ export default function TripDetailsScreen() {
         onSave={handleSavePost}
         currentUserName="You (Edric)"
         initialPost={editingPost}
+        tripMembers={trip?.members || []}
       />
 
       {selectedDate && (
@@ -444,30 +561,40 @@ export default function TripDetailsScreen() {
         />
       )}
 
+      {trip && (
+        <TripFormModal 
+          visible={isTripModalVisible}
+          onClose={() => setTripModalVisible(false)}
+          onSave={handleSaveTrip}
+          initialData={trip}
+        />
+      )}
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FBFBFB' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scrollContent: { paddingBottom: 60 },
-  coverContainer: { height: 350, position: 'relative' },
+  coverContainer: { height: 320, position: 'relative' }, // Slightly shorter
   coverImage: { width: '100%', height: '100%' },
-  bottomFader: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 180 },
-  backButton: { position: 'absolute', top: 55, left: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.25)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
-  coverDetails: { position: 'absolute', bottom: 20, left: 24, right: 24 },
-  privateBadge: { backgroundColor: '#059669', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, marginBottom: 8 },
-  privateBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  title: { color: '#1C1917', fontSize: 36, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 },
+  backButton: { position: 'absolute', top: 55, left: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0, 0, 0, 0.3)', justifyContent: 'center', alignItems: 'center' },
+  
+  sheetContainer: { marginTop: -32, backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
+  coverDetails: { padding: 24, paddingTop: 32 },
+  privateBadge: { backgroundColor: '#FFC800', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, marginBottom: 12 },
+  privateBadgeText: { color: '#1C1917', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  title: { color: '#1C1917', fontSize: 32, fontWeight: '900', letterSpacing: -0.5, marginBottom: 12 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { color: '#1C1917', fontSize: 14, fontWeight: '600' },
+  metaText: { color: '#78716C', fontSize: 13, fontWeight: '600' },
   
-  tabsWrapper: { borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginTop: 10 },
-  tabItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  activeTabItem: { borderBottomColor: '#059669' },
-  tabText: { fontSize: 12, fontWeight: '800', color: '#A8A29E', letterSpacing: 0.5 },
-  activeTabText: { color: '#059669' },
+  tabsWrapper: { marginTop: 16, marginBottom: 8 },
+  tabItem: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 100, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0F0F0' },
+  activeTabItem: { backgroundColor: '#1C1917', borderColor: '#1C1917' },
+  tabText: { fontSize: 13, fontWeight: '800', color: '#A8A29E', letterSpacing: 0.5 },
+  activeTabText: { color: '#FFFFFF' },
   
   contentArea: { padding: 24 },
   calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 32, padding: 24, borderWidth: 1, borderColor: '#F0F0F0', shadowColor: '#1C1917', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16 },
@@ -493,23 +620,35 @@ const styles = StyleSheet.create({
   summaryLabelDark: { color: '#A8A29E', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
   summaryValueDark: { color: '#1C1917', fontSize: 22, fontWeight: '900' },
   
-  transactionsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  transactionsTitle: { fontSize: 18, fontWeight: '800', color: '#1C1917' },
-  logExpenseBtn: { backgroundColor: '#1C1917', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, gap: 6 },
-  logExpenseBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  transactionsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  transactionsTitle: { fontSize: 24, fontWeight: '900', color: '#1C1917', letterSpacing: -0.5 },
+  logExpenseBtn: { backgroundColor: '#FFC800', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 100, gap: 8 },
+  logExpenseBtnText: { color: '#1C1917', fontSize: 14, fontWeight: '800' },
+  exportBtn: { backgroundColor: '#F5F5F5', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, gap: 6 },
+  exportBtnText: { color: '#1C1917', fontSize: 13, fontWeight: '800' },
   emptyExpenseCard: { backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 1, borderColor: '#F0F0F0', padding: 40, alignItems: 'center' },
   emptyExpenseText: { color: '#A8A29E', fontWeight: '600', fontSize: 15 },
 
   expensesList: { gap: 12, marginBottom: 20 },
   expenseItemCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 20, borderWidth: 1, borderColor: '#F0F0F0', shadowColor: '#1C1917', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8 },
   expenseItemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 16 },
-  expenseIconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  expenseIconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   expenseItemDesc: { fontSize: 15, fontWeight: '800', color: '#1C1917', marginBottom: 4 },
   expenseItemDate: { fontSize: 12, fontWeight: '600', color: '#A8A29E' },
-  expenseItemAmount: { fontSize: 16, fontWeight: '900', color: '#059669' },
+  expenseItemAmount: { fontSize: 16, fontWeight: '900', color: '#FFC800' },
+
+  chartCardWrapper: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#F0F0F0', marginBottom: 32 },
+  chartTitle: { fontSize: 13, fontWeight: '800', color: '#A8A29E', letterSpacing: 1, marginBottom: 20 },
+  chartBarWrapper: { flexDirection: 'row', height: 16, borderRadius: 100, backgroundColor: '#F0F0F0', marginBottom: 24, overflow: 'hidden' },
+  chartBarSegment: { height: '100%' },
+  chartLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  legendItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, minWidth: '40%' },
+  legendDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
+  legendText: { fontSize: 12, fontWeight: '800', color: '#1C1917', marginBottom: 2 },
+  legendAmount: { fontSize: 13, fontWeight: '700', color: '#A8A29E' },
 
   gActions: { paddingHorizontal: 24, gap: 12, marginBottom: 20 },
-  publishBtn: { backgroundColor: '#059669', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
+  publishBtn: { backgroundColor: '#FFC800', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
   publishBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   deleteBtn: { backgroundColor: '#FEF2F2', paddingVertical: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   deleteBtnText: { color: '#DC2626', fontSize: 16, fontWeight: '800' }

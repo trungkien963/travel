@@ -59,7 +59,7 @@ export function ExpenseDetailModal({ expense, onClose, onEdit, onDelete, canModi
 
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={{ alignItems: 'center', marginVertical: 32 }}>
-              <Text style={{ fontSize: 40, fontWeight: '900', color: '#059669', letterSpacing: -1 }}>
+              <Text style={{ fontSize: 40, fontWeight: '900', color: '#FFC800', letterSpacing: -1 }}>
                 ₫{formatCurrency(expense.amount.toString())}
               </Text>
               <Text style={{ fontSize: 20, color: '#1C1917', fontWeight: '800', marginTop: 12 }}>

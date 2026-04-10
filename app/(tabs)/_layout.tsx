@@ -11,25 +11,26 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#059669', // Emerald Green instead of black
-        tabBarInactiveTintColor: '#A8A29E',
+        tabBarActiveTintColor: '#FFC800', // Sunshine Yellow
+        tabBarInactiveTintColor: '#D4D4D4', 
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 32, 
-          left: 32,
-          right: 32,
-          backgroundColor: '#FFFFFF',
-          borderRadius: 100, 
-          height: 72,
-          borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: '#1C1917',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.08,
-          shadowRadius: 20,
-          paddingHorizontal: 8,
+          bottom: 0, 
+          left: 0,
+          right: 0,
+          backgroundColor: '#FFFFFF', // Pure white, solid
+          height: 84, // Taller to accommodate home indicator
+          borderTopWidth: 1,
+          borderTopColor: '#F0F0F0', // Subtle native line
+          elevation: 0,
+          shadowOpacity: 0,
+          paddingHorizontal: 16,
+          paddingBottom: 24, // Lift icons up above home indicator
+          paddingTop: 12,
         },
+        headerShown: false,
+      }}>
         headerShown: false,
       }}>
       <Tabs.Screen
@@ -45,7 +46,7 @@ export default function TabLayout() {
         }}
       />
       
-      {/* MASSIVE CENTER CAPTURE BUTTON */}
+      {/* INTEGRATED CENTER ACTION BUTTON */}
       <Tabs.Screen
         name="capture"
         listeners={{
@@ -56,11 +57,9 @@ export default function TabLayout() {
         }}
         options={{
           tabBarIcon: () => (
-            <View style={styles.captureButtonContainer}>
-               <View style={styles.captureButton}>
-                 <Camera size={28} color="#FFFFFF" strokeWidth={2.5} />
-               </View>
-            </View>
+             <View style={styles.captureButton}>
+               <Camera size={22} color="#FFFFFF" strokeWidth={3} />
+             </View>
           ),
         }}
       />
@@ -86,24 +85,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  captureButtonContainer: {
-    top: -24, // Break out of the tab bar
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   captureButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#059669', // Emerald green
+    width: 44,
+    height: 44,
+    borderRadius: 16, // Squircle action button, very modern
+    backgroundColor: '#FFC800', // Sunshine Yellow
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 4,
-    borderColor: '#FBFBFB',
   }
 });

@@ -71,7 +71,7 @@ export function DailySummaryModal({ visible, onClose, initialDate, availableDate
                   <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 40}}>
                     
                     <View style={styles.dateBanner}>
-                      <CalendarIcon size={24} color="#059669" />
+                      <CalendarIcon size={24} color="#FFC800" />
                       <Text style={styles.dateBannerText}>{formattedDate}</Text>
                     </View>
 
@@ -146,13 +146,13 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 22, fontWeight: '900', color: '#1C1917' },
   
   dateBanner: { backgroundColor: '#E8F5E9', padding: 20, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-  dateBannerText: { fontSize: 18, color: '#059669', fontWeight: '800' },
+  dateBannerText: { fontSize: 18, color: '#FFC800', fontWeight: '800' },
   
   sectionCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#F0F0F0', shadowColor: '#1C1917', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.02, shadowRadius: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1C1917' },
   
-  totalAmount: { fontSize: 32, fontWeight: '900', color: '#059669', marginTop: 12, marginBottom: 16 },
+  totalAmount: { fontSize: 32, fontWeight: '900', color: '#FFC800', marginTop: 12, marginBottom: 16 },
   
   expenseList: { borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 16, gap: 12 },
   expenseItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   
   postMiniCard: { backgroundColor: '#F5F5F5', borderRadius: 16, padding: 12 },
   postMiniHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  miniAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#059669', justifyContent: 'center', alignItems: 'center' },
+  miniAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFC800', justifyContent: 'center', alignItems: 'center' },
   miniAvatarTxt: { color: '#FFF', fontSize: 10, fontWeight: '900' },
   miniAuthorName: { fontSize: 13, fontWeight: '800', color: '#1C1917' },
   postMiniContent: { fontSize: 14, color: '#1C1917', fontWeight: '500', lineHeight: 20 },

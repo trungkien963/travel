@@ -15,6 +15,18 @@ export interface Expense {
   splits?: Record<string, number>;
   receipts?: string[];
   receipt?: string;
+  category?: ExpenseCategory;
 }
+
+export type ExpenseCategory = 'FOOD' | 'TRANSPORT' | 'HOTEL' | 'ACTIVITIES' | 'SHOPPING' | 'OTHER';
+
+export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+  FOOD: '#EF4444',      // Red
+  TRANSPORT: '#3B82F6', // Blue
+  HOTEL: '#8B5CF6',     // Purple
+  ACTIVITIES: '#10B981',// Green
+  SHOPPING: '#EC4899',  // Pink
+  OTHER: '#9CA3AF'      // Gray
+};
 
 export type SplitType = 'EQUALLY' | 'PERCENT' | 'FIXED';

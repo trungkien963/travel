@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image } from 'react-native';
-import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, UserPlus, Trash2, ChevronRight } from 'lucide-react-native';
+import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, UserPlus, Trash2, ChevronRight, MapPin } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MyTripsScreen() {
   const router = useRouter();
@@ -59,69 +60,85 @@ export default function MyTripsScreen() {
           <Text className="text-base text-muted font-medium">Your upcoming and past adventures.</Text>
         </View>
         <TouchableOpacity 
-          className="bg-primary w-14 h-14 rounded-2xl items-center justify-center shadow-sm"
+          style={{ backgroundColor: '#FFC800', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#FFC800', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 }}
           onPress={() => {
              setStep(1);
              setModalVisible(true);
           }}
         >
-          <Plus size={28} color="#FFFFFF" />
+          <Plus size={28} color="#1C1917" />
         </TouchableOpacity>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
         {/* Trip List */}
-        <View className="gap-6 mt-4">
+        {/* Trip List - Next Gen Style */}
+        <View style={{ gap: 24, marginTop: 16 }}>
+          
           {/* Card 1: Summer in Bali */}
           <TouchableOpacity 
-            className="bg-surface rounded-3xl p-3 flex-row items-center border border-[#F0F0F0] shadow-sm"
+            style={styles.genzCard}
+            activeOpacity={0.95}
             onPress={() => router.push('/trip/1')}
           >
-            <View className="w-[84px] h-[84px] rounded-2xl overflow-hidden mr-4">
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1000&auto=format&fit=crop' }} 
-                className="w-full h-full"
-              />
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000&auto=format&fit=crop' }} 
+              style={styles.genzCardImage}
+            />
+            
+            <View style={styles.genzCardTopRight}>
+               <View style={styles.statusBadge}>
+                 <MapPin size={12} color="#1C1917" />
+                 <Text style={styles.statusBadgeText}>UPCOMING</Text>
+               </View>
             </View>
-            <View className="flex-1 justify-center">
-              <Text className="text-lg font-bold text-text mb-1">Summer in Bali</Text>
-              <View className="flex-row items-center gap-1.5 mb-2">
-                <CalendarIcon size={12} color="#A8A29E" />
-                <Text className="text-xs text-muted font-medium">Apr 9 - Apr 10</Text>
-              </View>
-              <View className="w-6 h-6 rounded-full bg-[#F0F0F0] items-center justify-center overflow-hidden border border-[#E5E5E5]">
-                 <Text className="text-[12px]">👨‍💼</Text>
-              </View>
-            </View>
-            <View className="pr-3">
-              <ChevronRight size={20} color="#D4D4D4" />
+
+            {/* Frosted White Info Panel */}
+            <View style={styles.glassPanel}>
+               <View style={{ flex: 1, paddingRight: 16 }}>
+                 <Text style={styles.genzTitle}>Summer in Bali</Text>
+                 <View style={styles.genzMetaRow}>
+                   <CalendarIcon size={14} color="#78716C" />
+                   <Text style={styles.genzDates}>Apr 9 - Apr 10, 2026</Text>
+                 </View>
+               </View>
+               <View style={styles.genzAvatars}>
+                 <View style={styles.genzAvatarCircle}>
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
+                 </View>
+               </View>
             </View>
           </TouchableOpacity>
 
           {/* Card 2: Demo */}
           <TouchableOpacity 
-            className="bg-surface rounded-3xl p-3 flex-row items-center border border-[#F0F0F0] shadow-sm"
+            style={styles.genzCard}
+            activeOpacity={0.95}
           >
-            <View className="w-[84px] h-[84px] rounded-2xl overflow-hidden mr-4">
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1544485541-11d40a02a8e8?q=80&w=1000&auto=format&fit=crop' }} 
-                className="w-full h-full"
-              />
-            </View>
-            <View className="flex-1 justify-center">
-              <Text className="text-lg font-bold text-text mb-1">Demo</Text>
-              <View className="flex-row items-center gap-1.5 mb-2">
-                <CalendarIcon size={12} color="#A8A29E" />
-                <Text className="text-xs text-muted font-medium">N/A - N/A</Text>
-              </View>
-              <View className="w-6 h-6 rounded-full bg-[#F0F0F0] items-center justify-center overflow-hidden border border-[#E5E5E5]">
-                 <Text className="text-[12px]">👩‍💼</Text>
-              </View>
-            </View>
-            <View className="pr-3">
-              <ChevronRight size={20} color="#D4D4D4" />
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1501426026826-31c667bdf23d?q=80&w=1000&auto=format&fit=crop' }} 
+              style={styles.genzCardImage}
+            />
+            
+            <View style={styles.glassPanel}>
+               <View style={{ flex: 1, paddingRight: 16 }}>
+                 <Text style={styles.genzTitle}>Demo Trip</Text>
+                 <View style={styles.genzMetaRow}>
+                   <CalendarIcon size={14} color="#78716C" />
+                   <Text style={styles.genzDates}>Dates TBD</Text>
+                 </View>
+               </View>
+               <View style={styles.genzAvatars}>
+                 <View style={[styles.genzAvatarCircle, { zIndex: 2 }]}>
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
+                 </View>
+                 <View style={[styles.genzAvatarCircle, styles.genzAvatarMore, { zIndex: 1 }]}>
+                    <Text style={styles.genzAvatarText}>+3</Text>
+                 </View>
+               </View>
             </View>
           </TouchableOpacity>
+
         </View>
       </ScrollView>
 
@@ -319,7 +336,7 @@ export default function MyTripsScreen() {
                          className="bg-primary/10 w-9 h-9 rounded-xl items-center justify-center ml-2"
                          onPress={handleAddMember}
                       >
-                         <Plus size={18} color="#059669" />
+                         <Plus size={18} color="#FFC800" />
                       </TouchableOpacity>
                     </View>
                     {/* Error Prompt */}
@@ -374,3 +391,109 @@ export default function MyTripsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  genzCard: {
+    width: '100%',
+    height: 220,
+    borderRadius: 24,
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  genzCardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  genzCardTopRight: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 200, 0, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+    gap: 4,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#1C1917',
+    letterSpacing: 1,
+  },
+  glassPanel: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  genzTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1C1917',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  genzMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  genzDates: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#78716C',
+  },
+  genzAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  genzAvatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F0F0',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#FFFFFF', // Light border for elegant look
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  genzAvatarMore: {
+    backgroundColor: '#FFC800',
+    marginLeft: -10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  genzAvatarText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#1C1917',
+  },
+});

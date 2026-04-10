@@ -9,6 +9,7 @@ export function useExpenses() {
       amount: 1500000,
       payerId: 'm1',
       date: '2026-04-10',
+      category: 'ACTIVITIES',
     },
     {
       id: 'e2',
@@ -16,6 +17,7 @@ export function useExpenses() {
       amount: 4200000,
       payerId: 'm2',
       date: '2026-04-10',
+      category: 'FOOD',
     }
   ]);
 

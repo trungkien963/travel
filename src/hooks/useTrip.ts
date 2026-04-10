@@ -10,7 +10,7 @@ export function useTrip(tripId: string) {
   const [trip, setTrip] = useState<Trip | null>({
     id: tripId,
     title: 'Summer in Bali',
-    coverImage: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1000&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1473496169904-6a58eb22bf2f?q=80&w=1000&auto=format&fit=crop',
     startDate: 'Apr 9',
     endDate: 'Apr 10',
     ownerId: 'm1', // Đổi cái này thành 'm2' nếu muốn đóng vai thành viên thường (mất quyền Owner)
@@ -34,5 +34,9 @@ export function useTrip(tripId: string) {
     setTrip(prev => prev ? { ...prev, members: prev.members.map(m => m.id === member.id ? member : m) } : prev);
   };
 
-  return { trip, isOwner, currentUserId: CURRENT_USER_ID, removeMember, addMember, editMember };
+  const updateTrip = (updatedData: Partial<Trip>) => {
+    setTrip(prev => prev ? { ...prev, ...updatedData } : prev);
+  };
+
+  return { trip, isOwner, currentUserId: CURRENT_USER_ID, removeMember, addMember, editMember, updateTrip };
 }

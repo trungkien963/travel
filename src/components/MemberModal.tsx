@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 11, fontWeight: '800', color: '#A8A29E', letterSpacing: 1, marginBottom: 12 },
   textInput: { backgroundColor: '#FBFBFB', borderWidth: 1, borderColor: '#F0F0F0', borderRadius: 16, padding: 16, fontSize: 16, fontWeight: '600', color: '#1C1917', marginBottom: 24 },
   
-  saveBtn: { backgroundColor: '#059669', paddingVertical: 18, borderRadius: 16, alignItems: 'center' },
+  saveBtn: { backgroundColor: '#FFC800', paddingVertical: 18, borderRadius: 16, alignItems: 'center' },
   saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

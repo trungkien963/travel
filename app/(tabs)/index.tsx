@@ -1,100 +1,126 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
-import { Heart, MessageCircle, Share2, Globe, Sparkles } from 'lucide-react-native';
-import { Link } from 'expo-router';
+import { MapPin, Sparkles, Bell } from 'lucide-react-native';
+import { Link, useRouter } from 'expo-router';
 
 export default function DiscoverScreen() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Header - Neo-Minimalist */}
+        {/* Sleek Modern Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Community</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>Discover</Text>
+            <Sparkles size={20} color="#FFC800" />
+            <Link 
+              href="/"
+              style={{ 
+                marginLeft: 12, 
+                backgroundColor: '#F3F4F6', 
+                paddingHorizontal: 12, 
+                paddingVertical: 6, 
+                borderRadius: 12,
+                overflow: 'hidden'
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#1C1917' }}>TEST LANDING PAGE</Text>
+            </Link>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity onPress={() => router.push('/notifications')} style={styles.bellButton}>
+              <Bell size={24} color="#1C1917" />
+              <View style={styles.notificationDot} />
+            </TouchableOpacity>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} 
+              style={styles.avatarMini}
+            />
+          </View>
         </View>
 
-        {/* Categories - Pill styling */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categories} contentContainerStyle={{ gap: 10, paddingHorizontal: 24 }}>
+        {/* Minimal Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
           <TouchableOpacity style={styles.categoryActive}>
             <Text style={styles.categoryTextActive}>For You</Text>
+            <View style={styles.activeDot} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.categoryInactive}>
             <Text style={styles.categoryTextInactive}>Following</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.categoryInactive}>
-            <Text style={styles.categoryTextInactive}>Popular</Text>
+            <Text style={styles.categoryTextInactive}>Trending</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.categoryInactive}>
-            <Text style={styles.categoryTextInactive}>Recent</Text>
+            <Text style={styles.categoryTextInactive}>Nearby</Text>
           </TouchableOpacity>
         </ScrollView>
 
-        <View style={styles.feedContainer}>
-          {/* Card 1 */}
-          <Link href="/trip/1" asChild>
-            <TouchableOpacity activeOpacity={0.9} style={styles.feedCard}>
-              <View style={styles.imageWrapper}>
-                <Image 
-                  source={require('../../assets/images/content/discover_jungle_cover_1775745341693.png')} 
-                  style={styles.cardImage}
-                />
-                <View style={styles.statusTag}>
-                  <Globe size={12} color="#059669" />
-                  <Text style={styles.statusText}>Global</Text>
+        <View style={styles.masonryContainer}>
+          {/* Left Column */}
+          <View style={styles.column}>
+            <Link href="/trip/1" asChild>
+              <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+                <Image source={{uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 260 }]} />
+                <View style={styles.pinMeta}>
+                  <Text style={styles.pinTitle} numberOfLines={1}>Summer Breeze</Text>
+                  <View style={styles.pinLocationRow}>
+                    <Text style={styles.pinSubtitle}>Oceania</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>Bali Escape</Text>
-                <Text style={styles.cardSubtitle}>South America • Oct 12 - Oct 20</Text>
-                <View style={styles.engagementRow}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Heart size={20} color="#1C1917" />
-                    <Text style={styles.actionText}>2.4K</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <MessageCircle size={20} color="#1C1917" />
-                    <Text style={styles.actionText}>128</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Share2 size={20} color="#1C1917" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Link>
+              </TouchableOpacity>
+            </Link>
 
-          {/* Card 2 */}
-          <Link href="/trip/2" asChild>
-            <TouchableOpacity activeOpacity={0.9} style={styles.feedCard}>
-              <View style={styles.imageWrapper}>
-                <Image 
-                  source={require('../../assets/images/content/discover_mountain_cover_1775745360148.png')} 
-                  style={styles.cardImage}
-                />
-                <View style={styles.statusTag}>
-                  <Globe size={12} color="#059669" />
-                  <Text style={styles.statusText}>Global</Text>
-                </View>
+            <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+              <Image source={{uri: 'https://images.unsplash.com/photo-1532853270311-c918ee97268b?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 180 }]} />
+              <View style={styles.pinMeta}>
+                <Text style={styles.pinTitle} numberOfLines={1}>Poolside Sips</Text>
               </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>Andes Trails</Text>
-                <Text style={styles.cardSubtitle}>Peru • Nov 1 - Nov 5</Text>
-                <View style={styles.engagementRow}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Heart size={20} color="#1C1917" />
-                    <Text style={styles.actionText}>1.8K</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <MessageCircle size={20} color="#1C1917" />
-                    <Text style={styles.actionText}>94</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Share2 size={20} color="#1C1917" />
-                  </TouchableOpacity>
+            </TouchableOpacity>
+
+            <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+              <Image source={{uri: 'https://images.unsplash.com/photo-1544465544-1b71aee9dfa3?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 260 }]} />
+              <View style={styles.pinMeta}>
+                <Text style={styles.pinTitle} numberOfLines={1}>Sailing Day</Text>
+                <View style={styles.pinLocationRow}>
+                  <Text style={styles.pinSubtitle}>Adriatic Sea</Text>
                 </View>
               </View>
             </TouchableOpacity>
-          </Link>
+          </View>
+
+          {/* Right Column (Staggered) */}
+          <View style={[styles.column, { paddingTop: 40 }]}>
+            <Link href="/trip/2" asChild>
+              <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+                <Image source={{uri: 'https://images.unsplash.com/photo-1535262412228-673dc34efaca?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 320 }]} />
+                <View style={styles.pinMeta}>
+                  <Text style={styles.pinTitle} numberOfLines={1}>Into the Blue</Text>
+                  <View style={styles.pinLocationRow}>
+                    <Text style={styles.pinSubtitle}>Maldives</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Link>
+
+            <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+               <Image source={{uri: 'https://images.unsplash.com/photo-1600093678033-9097723af8bb?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 220 }]} />
+               <View style={styles.pinMeta}>
+                 <Text style={styles.pinTitle} numberOfLines={1}>Coastal Drive</Text>
+               </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity activeOpacity={0.9} style={styles.pinCard}>
+               <Image source={{uri: 'https://images.unsplash.com/photo-1498307833015-e7b400441eb8?w=800&auto=format&fit=crop'}} style={[styles.pinImage, { height: 280 }]} />
+               <View style={styles.pinMeta}>
+                 <Text style={styles.pinTitle} numberOfLines={1}>Crystal Clear</Text>
+                 <View style={styles.pinLocationRow}>
+                   <Text style={styles.pinSubtitle}>Bora Bora</Text>
+                 </View>
+               </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -104,118 +130,121 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFB', // Stone 50
+    backgroundColor: '#FFFFFF', // Clean white background like Lemon8
   },
   scrollContent: {
     paddingTop: 60,
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   header: {
-    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     marginBottom: 20,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '800', 
-    color: '#1C1917', // Stone 900
+    fontSize: 28,
+    fontWeight: '900', 
+    color: '#1C1917',
     letterSpacing: -0.5,
   },
-  categories: {
+  headerRight: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  bellButton: {
+    position: 'relative',
+    padding: 4,
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444', // Red dot for unread
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  avatarMini: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+  },
+  categories: {
+    paddingHorizontal: 20,
+    gap: 24,
     marginBottom: 24,
   },
   categoryActive: {
-    backgroundColor: '#1C1917',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 100, 
+    alignItems: 'center',
   },
   categoryTextActive: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FBFBFB',
-  },
-  categoryInactive: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  categoryTextInactive: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#A8A29E',
-  },
-  feedContainer: {
-    gap: 32,
-    paddingHorizontal: 24,
-  },
-  feedCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    overflow: 'hidden',
-    shadowColor: '#1C1917',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  imageWrapper: {
-    width: '100%',
-    height: 320,
-    position: 'relative',
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-  },
-  statusTag: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#059669', // Emerald
-  },
-  cardContent: {
-    padding: 20,
-  },
-  cardTitle: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '800',
     color: '#1C1917',
     marginBottom: 4,
   },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#A8A29E',
-    fontWeight: '500',
-    marginBottom: 16,
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFC800',
   },
-  engagementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
+  categoryInactive: {
+    paddingTop: 0,
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionText: {
-    fontSize: 15,
+  categoryTextInactive: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#A8A29E',
+  },
+  masonryContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  column: {
+    flex: 1,
+    gap: 16,
+  },
+  pinCard: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  pinImage: {
+    width: '100%',
+    borderRadius: 24,
+    backgroundColor: '#F5F5F5',
+    resizeMode: 'cover',
+  },
+  pinMeta: {
+    paddingTop: 10,
+    paddingHorizontal: 4,
+  },
+  pinTitle: {
     color: '#1C1917',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  pinLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pinSubtitle: {
+    color: '#78716C',
+    fontSize: 12,
+    fontWeight: '600',
   }
 });

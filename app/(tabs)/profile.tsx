@@ -1,79 +1,252 @@
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { Settings, Shield, HelpCircle, ChevronRight } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { Settings, Shield, HelpCircle, ChevronRight, LogOut, Edit3, Compass } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   return (
-    <View className="flex-1 bg-background">
-       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingTop: 60, paddingBottom: 120 }}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           
-          {/* Header & User Identity */}
-          <View className="flex-row items-center mb-10">
-             <View className="w-24 h-24 rounded-[32px] bg-surface shadow-sm border border-[#E5E5E5] overflow-hidden mr-5">
-               <Image 
-                 source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=3276&auto=format&fit=crop' }} 
-                 className="w-full h-full"
-               />
-             </View>
-             <View className="flex-1 justify-center">
-               <Text className="text-2xl font-bold text-text mb-1">Jane Doe</Text>
-               <Text className="text-sm text-muted mb-4 font-medium">jane@example.com</Text>
-               <TouchableOpacity className="bg-surface border border-[#E5E5E5] px-5 py-2.5 rounded-full self-start shadow-sm">
-                 <Text className="text-text font-bold text-xs uppercase tracking-wider">Edit Profile</Text>
-               </TouchableOpacity>
-             </View>
+          <Text style={styles.headerTitle}>Profile</Text>
+
+          {/* User Identity Card */}
+          <View style={styles.profileCard}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=3276&auto=format&fit=crop' }} 
+              style={styles.avatarImage}
+            />
+            <View style={styles.profileInfo}>
+              <Text style={styles.userName} numberOfLines={1}>Jane Doe</Text>
+              <Text style={styles.userEmail} numberOfLines={1}>jane@nomadsync.com</Text>
+              <TouchableOpacity style={styles.editButton}>
+                <Edit3 size={14} color="#FFF" />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Travel Stats Section */}
-          <Text className="text-xs font-bold text-muted uppercase tracking-widest pl-2 mb-3">Travel Stats</Text>
-          <View className="flex-row gap-3 mb-10">
-             <View className="flex-1 bg-surface rounded-3xl p-5 items-center border border-[#F0F0F0] shadow-sm">
-               <Text className="text-3xl font-black text-text mb-1">12</Text>
-               <Text className="text-[10px] font-bold text-muted uppercase tracking-widest">Trips</Text>
+          <Text style={styles.sectionLabel}>MILESTONES</Text>
+          <View style={styles.statsContainer}>
+             <View style={[styles.statBox, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+               <Text style={[styles.statNumber, { color: '#166534' }]}>12</Text>
+               <Text style={[styles.statLabel, { color: '#166534' }]}>Trips</Text>
              </View>
-             <View className="flex-1 bg-surface rounded-3xl p-5 items-center border border-[#F0F0F0] shadow-sm">
-               <Text className="text-3xl font-black text-primary mb-1">5</Text>
-               <Text className="text-[10px] font-bold text-muted uppercase tracking-widest">Countries</Text>
+             <View style={[styles.statBox, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+               <Text style={[styles.statNumber, { color: '#92400E' }]}>5</Text>
+               <Text style={[styles.statLabel, { color: '#92400E' }]}>Countries</Text>
              </View>
-             <View className="flex-1 bg-surface rounded-3xl p-5 items-center border border-[#F0F0F0] shadow-sm">
-               <Text className="text-3xl font-black text-text mb-1">142</Text>
-               <Text className="text-[10px] font-bold text-muted uppercase tracking-widest">Moments</Text>
+             <View style={[styles.statBox, { backgroundColor: '#F5F5F4', borderColor: '#E7E5E4' }]}>
+               <Text style={[styles.statNumber, { color: '#1C1917' }]}>142</Text>
+               <Text style={[styles.statLabel, { color: '#1C1917' }]}>Moments</Text>
              </View>
           </View>
 
           {/* Account Settings Section */}
-          <Text className="text-xs font-bold text-muted uppercase tracking-widest pl-2 mb-3">Account Settings</Text>
-          <View className="bg-surface rounded-[32px] border border-[#F0F0F0] shadow-sm mb-10 overflow-hidden">
-             <TouchableOpacity className="flex-row items-center justify-between p-5 border-b border-[#F0F0F0]">
-                <View className="flex-row items-center gap-4">
-                  <Settings size={22} color="#1C1917" />
-                  <Text className="text-base font-bold text-text">Preferences</Text>
+          <Text style={styles.sectionLabel}>SETTINGS</Text>
+          <View style={styles.settingsBlock}>
+             <TouchableOpacity style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconLayer}>
+                    <Settings size={20} color="#1C1917" />
+                  </View>
+                  <Text style={styles.settingText}>Preferences</Text>
                 </View>
-                <ChevronRight size={20} color="#E5E5E5" />
+                <ChevronRight size={20} color="#D4D4D4" />
              </TouchableOpacity>
 
-             <TouchableOpacity className="flex-row items-center justify-between p-5 border-b border-[#F0F0F0]">
-                <View className="flex-row items-center gap-4">
-                  <Shield size={22} color="#1C1917" />
-                  <Text className="text-base font-bold text-text">Privacy & Security</Text>
+             <TouchableOpacity style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconLayer}>
+                    <Shield size={20} color="#1C1917" />
+                  </View>
+                  <Text style={styles.settingText}>Privacy & Security</Text>
                 </View>
-                <ChevronRight size={20} color="#E5E5E5" />
+                <ChevronRight size={20} color="#D4D4D4" />
              </TouchableOpacity>
 
-             <TouchableOpacity className="flex-row items-center justify-between p-5">
-                <View className="flex-row items-center gap-4">
-                  <HelpCircle size={22} color="#1C1917" />
-                  <Text className="text-base font-bold text-text">Help Center</Text>
+             <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconLayer}>
+                    <HelpCircle size={20} color="#1C1917" />
+                  </View>
+                  <Text style={styles.settingText}>Help Center</Text>
                 </View>
-                <ChevronRight size={20} color="#E5E5E5" />
+                <ChevronRight size={20} color="#D4D4D4" />
              </TouchableOpacity>
           </View>
 
-          {/* Sign Out */}
-          <TouchableOpacity className="items-center py-2">
-            <Text className="text-muted font-bold text-base">Sign Out</Text>
+          <TouchableOpacity style={styles.signOutBtn}>
+            <LogOut size={20} color="#EF4444" />
+            <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
 
-       </ScrollView>
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FBFBFB', // Stone 50
+  },
+  scrollContent: {
+    padding: 24,
+    paddingTop: 60,
+    paddingBottom: 120,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '800', 
+    color: '#1C1917', 
+    letterSpacing: -0.5,
+    marginBottom: 32,
+  },
+  
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: 40,
+  },
+  avatarImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 28,
+    marginRight: 20,
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1C1917',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#A8A29E',
+    marginBottom: 16,
+  },
+  editButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1C1917',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 100,
+  },
+  editButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#D4D4D4',
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    marginLeft: 8,
+  },
+  
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 40,
+  },
+  statBox: {
+    flex: 1,
+    borderRadius: 24,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  settingsBlock: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
+    paddingHorizontal: 24,
+    marginBottom: 40,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  settingIconLayer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1C1917',
+  },
+
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 18,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  signOutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '800',
+  }
+});

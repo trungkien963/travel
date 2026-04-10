@@ -22,11 +22,17 @@ export function useBalances(expenses: Expense[], members: Member[]) {
           balances[exp.payerId] += exp.amount;
       }
       // Splitters get debt (-)
-      if (exp.splits) {
+      if (exp.splits && Object.keys(exp.splits).length > 0) {
          Object.entries(exp.splits).forEach(([memberId, splitAmount]) => {
             if (balances[memberId] !== undefined) {
                balances[memberId] -= splitAmount;
             }
+         });
+      } else {
+         // Default fallback: split equally among all members if no splits explicitly defined
+         const splitAmt = Math.round(exp.amount / members.length);
+         members.forEach(m => {
+            balances[m.id] -= splitAmt;
          });
       }
     });
@@ -72,5 +78,5 @@ export function useBalances(expenses: Expense[], members: Member[]) {
       netBalances: balances, 
       debts 
     };
-  }, [expenses]);
+  }, [expenses, members]);
 }

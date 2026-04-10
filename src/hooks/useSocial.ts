@@ -9,9 +9,9 @@ export function useSocial() {
       authorName: 'Jane Doe',
       content: 'Chuyến đi Bali này đỉnh quá mọi người ơi! Hoàng hôn tuyệt đẹp 🌅 Cảm ơn cả nhóm đã đồng hành!',
       images: [
-        'https://images.unsplash.com/photo-1512684534887-3c5e8869c362?w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=800&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1542385151-efd9000785a0?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1565557613262-b9e7b233f81e?w=800&auto=format&fit=crop'
       ],
       timestamp: '2 hours ago',
       date: '2026-04-10',
