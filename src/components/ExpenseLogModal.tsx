@@ -133,7 +133,7 @@ export function ExpenseLogModal({ visible, onClose, onSave, initialExpense, trip
       desc: expenseDesc,
       amount: parseInt(expenseAmount, 10),
       payerId: paidBy,
-      date: initialExpense?.date || new Date().toLocaleDateString('en-GB'),
+      date: initialExpense?.date || new Date().toISOString().split('T')[0],
       splits: splitsBreakdown,
       receipts: receiptImages,
     };

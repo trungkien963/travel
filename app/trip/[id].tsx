@@ -1,25 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon } from 'lucide-react-native';
+import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon, Heart, MessageCircle, Share2, Pencil, Camera as CameraIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { MOCK_MEMBERS } from '../../src/constants/mockData';
 import { useTrip } from '../../src/hooks/useTrip';
+import { useSocial } from '../../src/hooks/useSocial';
 import { useExpenses } from '../../src/hooks/useExpenses';
 import { useBalances } from '../../src/hooks/useBalances';
 import { ExpenseLogModal } from '../../src/components/ExpenseLogModal';
 import { ExpenseDetailModal } from '../../src/components/ExpenseDetailModal';
 import { MemberModal } from '../../src/components/MemberModal';
+import { PostCommentsModal } from '../../src/components/PostCommentsModal';
+import { CreatePostModal } from '../../src/components/CreatePostModal';
+import { DailySummaryModal } from '../../src/components/DailySummaryModal';
+import { PostItem } from '../../src/components/PostItem';
 import { Expense, Member } from '../../src/types/expense';
+import { Post } from '../../src/types/social';
 
 export default function TripDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('MEMBERS');
+  const [activeTab, setActiveTab] = useState('SOCIAL');
   
   const { trip, isOwner, currentUserId, addMember, editMember, removeMember } = useTrip(id as string);
+  const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial();
   const { expenses, saveExpense, deleteExpense } = useExpenses();
   const { netBalances, debts } = useBalances(expenses, trip?.members || []);
   
@@ -30,6 +37,12 @@ export default function TripDetailsScreen() {
 
   const [isMemberModalVisible, setMemberModalVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<Post | null>(null);
+  const [isCreatePostVisible, setCreatePostVisible] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const aprilDates = Array.from({length: 30}, (_, i) => `2026-04-${String(i+1).padStart(2,'0')}`);
 
   const formatCurrency = (val: string) => {
     if (!val) return '0';
@@ -71,6 +84,14 @@ export default function TripDetailsScreen() {
     setMemberModalVisible(false);
   };
 
+  const handleSavePost = (content: string, images: string[]) => {
+    if (editingPost) {
+      editPost(editingPost.id, content, images);
+    } else {
+      addPost(content, images, currentUserId, 'You (Edric)');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -97,14 +118,15 @@ export default function TripDetailsScreen() {
 
         {/* Tab Navigation */}
         <View style={styles.tabsWrapper}>
-           {['MOMENTS', 'EXPENSES', 'BALANCES', 'MEMBERS'].map(tab => (
-             <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}>
-               <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
-             </TouchableOpacity>
-           ))}
+           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingHorizontal: 8}}>
+             {['MOMENTS', 'SOCIAL', 'EXPENSES', 'BALANCES', 'MEMBERS'].map(tab => (
+               <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}>
+                 <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+               </TouchableOpacity>
+             ))}
+           </ScrollView>
         </View>
 
-        {/* Content Area */}
         <View style={styles.contentArea}>
            {activeTab === 'MOMENTS' && (
              <View style={styles.calendarCard}>
@@ -119,14 +141,72 @@ export default function TripDetailsScreen() {
                   {['S','M','T','W','T','F','S'].map((d, i) => (<Text key={i} style={styles.dayText}>{d}</Text>))}
                 </View>
                 <View style={styles.datesGrid}>
-                   {[29,30,31,1,2,3,4,5,6,7,8,9].map((d, idx) => (
+                   {/* Prev Month Days */}
+                   {[29,30,31].map((d, idx) => (
                      <View key={`d-${idx}`} style={styles.dateCell}><Text style={styles.dateTextDisabled}>{d}</Text></View>
                    ))}
-                   <View style={styles.dateCellSelected}><View style={styles.dateCircle}><Text style={styles.dateTextSelected}>10</Text></View></View>
-                   {[11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,1,2].map((d, idx) => (
+                   
+                   {/* April Days */}
+                   {Array.from({length: 30}, (_, i) => i + 1).map((d) => {
+                     const dateStr = `2026-04-${String(d).padStart(2,'0')}`;
+                     const dailyImages = posts.filter(p => p.date === dateStr).flatMap(p => p.images);
+                     const isTripDay = d >= 9 && d <= 15; // Highlight trip duration
+                     
+                     return (
+                       <TouchableOpacity 
+                         key={`apr-${d}`} 
+                         style={[styles.dateCell, isTripDay && { backgroundColor: '#F0FDF4', borderRadius: 16 }]}
+                         onPress={() => setSelectedDate(dateStr)}
+                       >
+                         <Text style={[
+                           styles.dateText, 
+                           isTripDay && { color: '#059669', fontWeight: '900' },
+                           { marginBottom: dailyImages.length > 0 ? 4 : 0 }
+                         ]}>{d}</Text>
+                         
+                         {/* Tiny Thumbnails grid */}
+                         {dailyImages.length > 0 && (
+                           <View style={{flexDirection: 'row', flexWrap: 'wrap', width: 26, height: 26, gap: 2, justifyContent: 'center', alignItems: 'center'}}>
+                             {dailyImages.slice(0, 4).map((img, i) => (
+                               <Image key={i} source={{uri: img}} style={{width: 12, height: 12, borderRadius: 4}} />
+                             ))}
+                           </View>
+                         )}
+                       </TouchableOpacity>
+                     );
+                   })}
+                   
+                   {/* Next Month Days */}
+                   {[1,2,3,4,5,6,7,8,9].map((d, idx) => (
                      <View key={`f-${idx}`} style={styles.dateCell}><Text style={styles.dateTextDisabled}>{d}</Text></View>
                    ))}
                 </View>
+             </View>
+           )}
+
+           {activeTab === 'SOCIAL' && (
+             <View style={{gap: 24}}>
+               <View style={styles.transactionsHeader}>
+                 <Text style={styles.transactionsTitle}>Trip Diary</Text>
+                 <TouchableOpacity style={styles.logExpenseBtn} onPress={() => { setEditingPost(null); setCreatePostVisible(true); }}>
+                   <CameraIcon size={14} color="#FFF" />
+                   <Text style={styles.logExpenseBtnText}>Chụp Ảnh</Text>
+                 </TouchableOpacity>
+               </View>
+               
+               {posts.map(post => (
+                 <PostItem 
+                   key={post.id} 
+                   post={post}
+                   isOwner={isOwner}
+                   currentUserId={currentUserId}
+                   onLike={toggleLike}
+                   onComment={(p) => setSelectedPostForComments(p)}
+                   onDelete={deleteSocialPost}
+                   onEdit={(p) => { setEditingPost(p); setCreatePostVisible(true); }}
+                 />
+               ))}
+               <View style={{height: 100}} />
              </View>
            )}
 
@@ -339,6 +419,31 @@ export default function TripDetailsScreen() {
         initialMember={editingMember}
       />
 
+      <PostCommentsModal 
+        post={posts.find(p => p.id === selectedPostForComments?.id) || null}
+        onClose={() => setSelectedPostForComments(null)}
+        onAddComment={addComment}
+      />
+
+      <CreatePostModal 
+        visible={isCreatePostVisible}
+        onClose={() => setCreatePostVisible(false)}
+        onSave={handleSavePost}
+        currentUserName="You (Edric)"
+        initialPost={editingPost}
+      />
+
+      {selectedDate && (
+        <DailySummaryModal 
+          visible={!!selectedDate}
+          onClose={() => setSelectedDate(null)}
+          initialDate={selectedDate}
+          availableDates={aprilDates}
+          expenses={expenses}
+          posts={posts}
+        />
+      )}
+
     </View>
   );
 }
@@ -358,8 +463,8 @@ const styles = StyleSheet.create({
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: '#1C1917', fontSize: 14, fontWeight: '600' },
   
-  tabsWrapper: { flexDirection: 'row', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginTop: 10 },
-  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabsWrapper: { borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginTop: 10 },
+  tabItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   activeTabItem: { borderBottomColor: '#059669' },
   tabText: { fontSize: 12, fontWeight: '800', color: '#A8A29E', letterSpacing: 0.5 },
   activeTabText: { color: '#059669' },
@@ -375,6 +480,7 @@ const styles = StyleSheet.create({
   datesGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dateCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   dateTextDisabled: { color: '#E5E5E5', fontSize: 13, fontWeight: '700' },
+  dateText: { color: '#1C1917', fontSize: 15, fontWeight: '600' },
   dateCellSelected: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   dateCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
   dateTextSelected: { color: '#1C1917', fontSize: 15, fontWeight: '800' },

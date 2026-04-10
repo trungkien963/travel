@@ -2,7 +2,22 @@ import { useState } from 'react';
 import { Expense } from '../types/expense';
 
 export function useExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([
+    {
+      id: 'e1',
+      desc: 'Vé vào cổng Resort',
+      amount: 1500000,
+      payerId: 'm1',
+      date: '2026-04-10',
+    },
+    {
+      id: 'e2',
+      desc: 'Tiệc BBQ bãi biển',
+      amount: 4200000,
+      payerId: 'm2',
+      date: '2026-04-10',
+    }
+  ]);
 
   const addExpense = (expense: Expense) => {
     setExpenses(prev => [expense, ...prev]);
