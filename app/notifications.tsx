@@ -56,6 +56,26 @@ export default function NotificationsScreen() {
             {item.message}
           </Text>
           <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+          
+          {item.type === 'TRIP_INVITE' && !item.isRead && (
+             <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.primaryActionBtn}>
+                  <Text style={styles.primaryActionText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.secondaryActionBtn}>
+                  <Text style={styles.secondaryActionText}>Decline</Text>
+                </TouchableOpacity>
+             </View>
+          )}
+
+          {item.type === 'EXPENSE_ADDED' && !item.isRead && (
+             <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.payBtn}>
+                  <DollarSign size={14} color="#FFF" />
+                  <Text style={styles.primaryActionText}>Settle Up</Text>
+                </TouchableOpacity>
+             </View>
+          )}
         </View>
 
         <View style={[styles.iconContainer, { backgroundColor: getIconBackground(item.type) }]}>
@@ -204,4 +224,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+  primaryActionBtn: {
+    backgroundColor: '#FFC800',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  secondaryActionBtn: {
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  secondaryActionText: {
+    color: '#1C1917',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  payBtn: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 4,
+  }
 });

@@ -57,3 +57,10 @@ export const MOCK_TRIPS = [
   { id: '1', title: 'Summer in Bali', startDate: '2026-04-09', endDate: '2026-04-10' },
   { id: '2', title: 'Demo Trip', startDate: '2026-05-01', endDate: '2026-05-05' },
 ];
+
+export const MOCK_FRIENDS = [
+  { id: 'f1', name: 'Khoi Nguyen', username: '@khoing', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&auto=format&fit=crop' },
+  { id: 'f2', name: 'Jane Doe', username: '@janed', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
+  { id: 'f3', name: 'Minh Quan', username: '@minhq', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop' },
+  { id: 'f4', name: 'Thao Nguyen', username: '@thaon', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&auto=format&fit=crop' },
+];

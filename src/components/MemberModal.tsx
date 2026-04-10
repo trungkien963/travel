@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Member } from '../types/expense';
+import { MOCK_FRIENDS } from '../constants/mockData';
 
 const { height } = Dimensions.get('window');
 
@@ -48,6 +49,11 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
     // Close & reset handled by parent / effect
   };
 
+  const filteredFriends = MOCK_FRIENDS.filter(f => 
+    name.length > 1 && 
+    (f.name.toLowerCase().includes(name.toLowerCase()) || f.username.toLowerCase().includes(name.toLowerCase()))
+  );
+
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -58,14 +64,36 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
               <TouchableOpacity onPress={onClose}><X size={24} color="#A8A29E" /></TouchableOpacity>
             </View>
 
-            <Text style={styles.fieldLabel}>FULL NAME *</Text>
+            <Text style={styles.fieldLabel}>FULL NAME OR USERNAME *</Text>
             <TextInput 
               style={styles.textInput} 
-              placeholder="e.g. John Doe" 
+              placeholder="e.g. @khoing or John Doe" 
               placeholderTextColor="#D4D4D4" 
               value={name} 
               onChangeText={setName} 
             />
+
+            {!initialMember && filteredFriends.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                <Text style={styles.suggestionsTitle}>SUGGESTIONS</Text>
+                {filteredFriends.map(f => (
+                  <TouchableOpacity 
+                    key={f.id} 
+                    style={styles.suggestionRow}
+                    onPress={() => {
+                      setName(f.name);
+                      setEmail(f.username + '@nomadsync.com');
+                    }}
+                  >
+                     <View style={styles.suggestionAvatar} />
+                     <View>
+                        <Text style={styles.suggestionName}>{f.name}</Text>
+                        <Text style={styles.suggestionUsername}>{f.username}</Text>
+                     </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={styles.fieldLabel}>EMAIL ADDRESS (OPTIONAL)</Text>
             <TextInput 
@@ -76,16 +104,6 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
               autoCapitalize="none"
               value={email} 
               onChangeText={setEmail} 
-            />
-
-            <Text style={styles.fieldLabel}>PHONE NUMBER (OPTIONAL)</Text>
-            <TextInput 
-              style={[styles.textInput, {marginBottom: 40}]} 
-              placeholder="e.g. +84 123 456 789" 
-              placeholderTextColor="#D4D4D4" 
-              keyboardType="phone-pad"
-              value={phone} 
-              onChangeText={setPhone} 
             />
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
@@ -111,4 +129,11 @@ const styles = StyleSheet.create({
   
   saveBtn: { backgroundColor: '#FFC800', paddingVertical: 18, borderRadius: 16, alignItems: 'center' },
   saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  
+  suggestionsContainer: { backgroundColor: '#F9FAFB', borderRadius: 16, padding: 16, marginBottom: 24, marginTop: -8 },
+  suggestionsTitle: { fontSize: 10, fontWeight: '800', color: '#A8A29E', letterSpacing: 1, marginBottom: 12 },
+  suggestionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  suggestionAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E5E7EB', marginRight: 12 },
+  suggestionName: { fontSize: 14, fontWeight: '700', color: '#1C1917' },
+  suggestionUsername: { fontSize: 12, color: '#6B7280' },
 });
