@@ -1,5 +1,6 @@
 export interface Member {
   id: string;
+  tripId?: string;
   name: string;
   isMe?: boolean;
   email?: string;
@@ -8,6 +9,7 @@ export interface Member {
 
 export interface Expense {
   id: string;
+  tripId?: string;
   desc: string;
   amount: number;
   payerId: string;

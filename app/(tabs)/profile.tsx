@@ -1,7 +1,28 @@
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import { Settings, Shield, HelpCircle, ChevronRight, LogOut, Edit3, Compass } from 'lucide-react-native';
+import { supabase } from '../../src/lib/supabase';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/');
+  };
+
+  const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Nomad Explorer';
+  const email = user?.email || 'Locating data...';
+  const avatarUrl = user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=2459';
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -12,12 +33,12 @@ export default function ProfileScreen() {
           {/* User Identity Card */}
           <View style={styles.profileCard}>
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=3276&auto=format&fit=crop' }} 
+              source={{ uri: avatarUrl }} 
               style={styles.avatarImage}
             />
             <View style={styles.profileInfo}>
-              <Text style={styles.userName} numberOfLines={1}>Jane Doe</Text>
-              <Text style={styles.userEmail} numberOfLines={1}>jane@nomadsync.com</Text>
+              <Text style={styles.userName} numberOfLines={1}>{name}</Text>
+              <Text style={styles.userEmail} numberOfLines={1}>{email}</Text>
               <TouchableOpacity style={styles.editButton}>
                 <Edit3 size={14} color="#FFF" />
                 <Text style={styles.editButtonText}>Edit</Text>
@@ -76,7 +97,7 @@ export default function ProfileScreen() {
              </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.signOutBtn}>
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
             <LogOut size={20} color="#EF4444" />
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>

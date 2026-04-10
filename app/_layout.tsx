@@ -12,6 +12,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { useTravelStore } from '../src/store/useTravelStore';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,12 +40,15 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  const initSupabase = useTravelStore((state) => state.initSupabase);
+
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      // Initialize Supabase sync in the background
+      initSupabase();
     }
   }, [loaded]);
-
   if (!loaded) {
     return null;
   }

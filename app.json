@@ -36,7 +36,8 @@
         {
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera to capture your trip moments."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

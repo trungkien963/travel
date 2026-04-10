@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image } from 'react-native';
-import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, UserPlus, Trash2, ChevronRight, MapPin } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image, Alert } from 'react-native';
+import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, UserPlus, Trash2, ChevronRight, MapPin, Search, Image as ImageIcon } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTravelStore } from '../../src/store/useTravelStore';
+import { useLocationSearch, LocationResult } from '../../src/hooks/useLocationSearch';
 
 export default function MyTripsScreen() {
   const router = useRouter();
@@ -12,6 +15,57 @@ export default function MyTripsScreen() {
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [tripTitle, setTripTitle] = useState('');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+
+  const handleImageSelection = () => {
+    Alert.alert(
+      "Cover Image",
+      "Set the vibe for your trip!",
+      [
+        {
+          text: "Snap a Photo",
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'We need camera access to snap a photo.');
+              return;
+            }
+            let result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [16, 9],
+              quality: 0.8,
+            });
+            if (!result.canceled) {
+              setCoverImage(result.assets[0].uri);
+            }
+          }
+        },
+        {
+          text: "Choose from Camera Roll",
+          onPress: async () => {
+            let result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [16, 9],
+              quality: 0.8,
+            });
+            if (!result.canceled) {
+              setCoverImage(result.assets[0].uri);
+            }
+          }
+        },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
+  };
+
+  // Location Autocomplete
+  const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
+  const { query, setQuery, results, isSearching } = useLocationSearch();
+
+  const { trips, addTrip } = useTravelStore();
   
   // Wizard States
   const [step, setStep] = useState<1 | 2>(1);
@@ -74,71 +128,50 @@ export default function MyTripsScreen() {
         {/* Trip List */}
         {/* Trip List - Next Gen Style */}
         <View style={{ gap: 24, marginTop: 16 }}>
-          
-          {/* Card 1: Summer in Bali */}
-          <TouchableOpacity 
-            style={styles.genzCard}
-            activeOpacity={0.95}
-            onPress={() => router.push('/trip/1')}
-          >
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000&auto=format&fit=crop' }} 
-              style={styles.genzCardImage}
-            />
-            
-            <View style={styles.genzCardTopRight}>
-               <View style={styles.statusBadge}>
-                 <MapPin size={12} color="#1C1917" />
-                 <Text style={styles.statusBadgeText}>UPCOMING</Text>
-               </View>
+          {trips.length === 0 ? (
+            <View style={{ alignItems: 'center', marginTop: 40 }}>
+              <Text style={{ color: '#A8A29E', fontSize: 16 }}>No trips yet. Start an adventure!</Text>
             </View>
+          ) : (
+            trips.map(t => (
+              <TouchableOpacity 
+                key={t.id}
+                style={styles.genzCard}
+                activeOpacity={0.95}
+                onPress={() => router.push(`/trip/${t.id}`)}
+              >
+                <Image 
+                  source={{ uri: t.coverImage || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000' }} 
+                  style={styles.genzCardImage}
+                />
+                
+                <View style={styles.genzCardTopRight}>
+                   <View style={styles.statusBadge}>
+                     <MapPin size={12} color="#1C1917" />
+                     <Text style={styles.statusBadgeText}>
+                        {new Date(t.startDate) > new Date() ? 'UPCOMING' : 'ONGOING'}
+                     </Text>
+                   </View>
+                </View>
 
-            {/* Frosted White Info Panel */}
-            <View style={styles.glassPanel}>
-               <View style={{ flex: 1, paddingRight: 16 }}>
-                 <Text style={styles.genzTitle}>Summer in Bali</Text>
-                 <View style={styles.genzMetaRow}>
-                   <CalendarIcon size={14} color="#78716C" />
-                   <Text style={styles.genzDates}>Apr 9 - Apr 10, 2026</Text>
-                 </View>
-               </View>
-               <View style={styles.genzAvatars}>
-                 <View style={styles.genzAvatarCircle}>
-                    <Image source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
-                 </View>
-               </View>
-            </View>
-          </TouchableOpacity>
-
-          {/* Card 2: Demo */}
-          <TouchableOpacity 
-            style={styles.genzCard}
-            activeOpacity={0.95}
-          >
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1501426026826-31c667bdf23d?q=80&w=1000&auto=format&fit=crop' }} 
-              style={styles.genzCardImage}
-            />
-            
-            <View style={styles.glassPanel}>
-               <View style={{ flex: 1, paddingRight: 16 }}>
-                 <Text style={styles.genzTitle}>Demo Trip</Text>
-                 <View style={styles.genzMetaRow}>
-                   <CalendarIcon size={14} color="#78716C" />
-                   <Text style={styles.genzDates}>Dates TBD</Text>
-                 </View>
-               </View>
-               <View style={styles.genzAvatars}>
-                 <View style={[styles.genzAvatarCircle, { zIndex: 2 }]}>
-                    <Image source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
-                 </View>
-                 <View style={[styles.genzAvatarCircle, styles.genzAvatarMore, { zIndex: 1 }]}>
-                    <Text style={styles.genzAvatarText}>+3</Text>
-                 </View>
-               </View>
-            </View>
-          </TouchableOpacity>
-
+                {/* Frosted White Info Panel */}
+                <View style={styles.glassPanel}>
+                   <View style={{ flex: 1, paddingRight: 16 }}>
+                     <Text style={styles.genzTitle}>{t.title}</Text>
+                     <View style={styles.genzMetaRow}>
+                       <CalendarIcon size={14} color="#78716C" />
+                       <Text style={styles.genzDates}>{t.startDate} - {t.endDate}</Text>
+                     </View>
+                   </View>
+                   <View style={styles.genzAvatars}>
+                     <View style={styles.genzAvatarCircle}>
+                        <Image source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
+                     </View>
+                   </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -181,34 +214,109 @@ export default function MyTripsScreen() {
 
               {step === 1 ? (
                 <>
-                  {/* Trip Title Field */}
-                  <View className="mb-5">
-                    <Text className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Trip Title</Text>
-                    <View className="bg-background rounded-2xl px-4 py-4 border border-[#F0F0F0]">
-                      <TextInput 
-                        placeholder="e.g. Summer in Bali"
-                        placeholderTextColor="#A8A29E"
-                        className="text-base text-text font-medium"
-                      />
-                    </View>
+                  {/* Huge Edge-to-Edge Cover Image Header */}
+                  <TouchableOpacity 
+                    onPress={handleImageSelection}
+                    className="w-full h-48 bg-gray-100 rounded-2xl overflow-hidden items-center justify-center mb-6 relative"
+                  >
+                    {coverImage ? (
+                      <>
+                        <Image source={{ uri: coverImage }} style={{ width: '100%', height: '100%' }} />
+                        <View className="absolute bottom-3 right-3 bg-black/60 px-3 py-1.5 rounded-full flex-row items-center">
+                          <ImageIcon size={14} color="#FFF" />
+                          <Text className="text-white text-xs font-bold ml-1">Retake</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <View className="items-center">
+                        <View className="w-14 h-14 bg-white/80 rounded-full items-center justify-center shadow-sm mb-2">
+                          <ImageIcon size={28} color="#0EA5E9" />
+                        </View>
+                        <Text className="text-base font-bold text-text">Add a Vibe Check</Text>
+                        <Text className="text-sm text-muted">Tap to set trip cover</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Borderless Title Field */}
+                  <View className="mb-6 border-b border-gray-100 pb-2">
+                    <TextInput 
+                      placeholder="Where to next?"
+                      placeholderTextColor="#D4D4D4"
+                      className="text-4xl font-black text-text tracking-tighter"
+                      value={tripTitle}
+                      onChangeText={setTripTitle}
+                    />
                   </View>
 
-                  {/* Start & End Dates */}
-                  <View className="flex-row gap-4 mb-8">
-                    {/* Start Date */}
-                    <View className="flex-1">
-                      <Text className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Start Date</Text>
-                      <TouchableOpacity 
-                        className="bg-background rounded-2xl px-4 py-4 border border-[#F0F0F0] flex-row items-center justify-between"
-                        onPress={() => setShowStartPicker(true)}
-                      >
-                        <Text className="text-base text-text font-medium">
-                          {startDate.toLocaleDateString('en-GB')}
-                        </Text>
-                        <CalendarIcon size={18} color="#A8A29E" />
-                      </TouchableOpacity>
-                      
-                      {/* Android inline modal */}
+                  {/* Seamless Destination Search */}
+                  <View className="mb-6 border-b border-gray-100 pb-4">
+                    {selectedLocation ? (
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center flex-1">
+                          <MapPin size={24} color="#0EA5E9" className="mr-3" />
+                          <View>
+                            <Text className="text-xl font-bold text-text tracking-tight">{selectedLocation.name}</Text>
+                            <Text className="text-sm text-muted">{selectedLocation.city}</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity onPress={() => { setSelectedLocation(null); setQuery(''); }} className="bg-gray-100 p-2 rounded-full">
+                           <X size={18} color="#1C1917" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View>
+                        <View className="flex-row items-center">
+                          <Search size={22} color="#D4D4D4" className="mr-3" />
+                          <TextInput
+                            className="flex-1 text-xl font-bold text-text tracking-tight"
+                            placeholder="Search city..."
+                            placeholderTextColor="#D4D4D4"
+                            value={query}
+                            onChangeText={setQuery}
+                          />
+                        </View>
+                        
+                        {isSearching && <Text className="text-sm text-[#0EA5E9] font-medium mt-3 ml-8">Searching Map...</Text>}
+                        
+                        {results.length > 0 && (
+                          <View className="mt-3 ml-8">
+                            {results.map((r) => (
+                              <TouchableOpacity 
+                                key={r.placeId} 
+                                className="py-3 border-b border-gray-50"
+                                onPress={() => setSelectedLocation(r)}
+                              >
+                                <Text className="text-base font-bold text-text">{r.name}</Text>
+                                <Text className="text-xs text-muted mt-0.5">{r.address}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Bubble Dates Selection */}
+                  <View className="flex-row justify-between mb-8 gap-4">
+                    <TouchableOpacity 
+                      className="flex-1 bg-gray-50 rounded-2xl p-4 items-center border border-gray-100 shadow-sm"
+                      onPress={() => setShowStartPicker(true)}
+                    >
+                      <Text className="text-xs font-bold text-muted uppercase tracking-widest mb-1">From</Text>
+                      <Text className="text-lg font-black text-[#0EA5E9]">{startDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      className="flex-1 bg-gray-50 rounded-2xl p-4 items-center border border-gray-100 shadow-sm"
+                      onPress={() => setShowEndPicker(true)}
+                    >
+                      <Text className="text-xs font-bold text-muted uppercase tracking-widest mb-1">To</Text>
+                      <Text className="text-lg font-black text-[#0EA5E9]">{endDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Android Date Pickers */}
                       {showStartPicker && Platform.OS === 'android' && (
                         <DateTimePicker
                           value={startDate}
@@ -245,22 +353,6 @@ export default function MyTripsScreen() {
                           </View>
                         </Modal>
                       )}
-                    </View>
-
-                    {/* End Date */}
-                    <View className="flex-1">
-                      <Text className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">End Date</Text>
-                      <TouchableOpacity 
-                        className="bg-background rounded-2xl px-4 py-4 border border-[#F0F0F0] flex-row items-center justify-between"
-                        onPress={() => setShowEndPicker(true)}
-                      >
-                        <Text className="text-base text-text font-medium">
-                          {endDate.toLocaleDateString('en-GB')}
-                        </Text>
-                        <CalendarIcon size={18} color="#A8A29E" />
-                      </TouchableOpacity>
-
-                      {/* Android inline modal */}
                       {showEndPicker && Platform.OS === 'android' && (
                         <DateTimePicker
                           value={endDate}
@@ -297,12 +389,11 @@ export default function MyTripsScreen() {
                           </View>
                         </Modal>
                       )}
-                    </View>
-                  </View>
+
 
                   {/* Primary Action Button */}
                   <TouchableOpacity 
-                    className="bg-primary py-4 rounded-2xl items-center shadow-sm"
+                    className="bg-[#0EA5E9] py-4 rounded-2xl items-center shadow-sm"
                     onPress={handleNext}
                   >
                     <Text className="text-white font-bold text-base">Next: Add Members</Text>
@@ -348,9 +439,17 @@ export default function MyTripsScreen() {
                   {/* Member List */}
                   <View className="h-32 mt-4 mb-6">
                     <ScrollView showsVerticalScrollIndicator={false}>
-                       <View className="flex-row flex-wrap gap-2">
+                       <View className="flex-row flex-wrap gap-2 items-center">
+                         {/* Owner Badge */}
+                         <View className="bg-background border border-[#FFC800] rounded-full px-3 py-2 flex-row items-center gap-2">
+                           <View className="bg-[#FFC800] w-6 h-6 rounded-full items-center justify-center">
+                              <Text className="text-[10px] text-white font-black uppercase">ME</Text>
+                           </View>
+                           <Text className="text-sm font-semibold text-text">You (Owner)</Text>
+                         </View>
+
                          {members.length === 0 ? (
-                           <Text className="text-sm text-muted italic mt-2 ml-1">No members added yet.</Text>
+                           <Text className="text-sm text-muted italic ml-1">No other members added.</Text>
                          ) : (
                            members.map((email, idx) => (
                              <View key={idx} className="bg-background border border-[#E5E5E5] rounded-full px-3 py-2 flex-row items-center gap-2">
@@ -370,14 +469,26 @@ export default function MyTripsScreen() {
 
                   {/* Primary Action Button */}
                   <TouchableOpacity 
-                    className="bg-primary py-4 rounded-2xl items-center shadow-sm"
+                    className="bg-[#0EA5E9] py-4 rounded-2xl items-center shadow-sm"
                     onPress={() => {
-                       // Logic to save trip and members
+                       const newTripId = 't' + Date.now().toString();
+                       addTrip({
+                         id: newTripId,
+                         title: tripTitle || 'Untitled Trip',
+                         coverImage: coverImage || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000',
+                         locationName: selectedLocation?.name,
+                         locationCity: selectedLocation?.city,
+                         startDate: startDate.toISOString().split('T')[0],
+                         endDate: endDate.toISOString().split('T')[0],
+                         ownerId: 'm1',
+                         members: [],
+                         isPrivate: true
+                       });
                        setModalVisible(false);
                        setStep(1);
                        setMembers([]);
-                       // Navigate directly to the Trip detail screen
-                       router.push('/trip/1');
+                       setTripTitle('');
+                       router.push(`/trip/${newTripId}`);
                     }}
                   >
                     <Text className="text-white font-bold text-base">Create Adventure</Text>

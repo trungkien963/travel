@@ -81,8 +81,7 @@ export default function LandingScreen() {
   };
 
   const handleLogin = (provider: string) => {
-    // Navigate straight to tabs on Expo Go since we mock the state for now
-    router.replace('/(tabs)');
+    router.replace('/auth');
   };
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
@@ -134,7 +133,7 @@ export default function LandingScreen() {
 
       {/* Skip/Close Button to go back easily */}
       <Animated.View style={[styles.closeButtonContainer, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]} pointerEvents={currentIndex < ONBOARDING_DATA.length - 1 ? 'auto' : 'none'}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.replace('/(tabs)')} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => router.replace('/auth')} activeOpacity={0.8}>
           <X color="#FFFFFF" size={24} />
         </TouchableOpacity>
       </Animated.View>
@@ -169,21 +168,11 @@ export default function LandingScreen() {
           <Text style={styles.authSubPrompt}>The world is vast and beautiful. Choose how you want to dive in.</Text>
           
           <TouchableOpacity
-            style={[styles.authButton, styles.authButtonGoogle]}
-            onPress={() => handleLogin('Google')}
+            style={[styles.authButton, { backgroundColor: '#FFC800', borderWidth: 0 }]}
+            onPress={() => handleLogin('Email')}
             activeOpacity={0.9}
           >
-            <FontAwesome name="google" color="#1C1917" size={22} style={{ marginRight: 12 }} />
-            <Text style={styles.authButtonTextDark}>Continue with Google</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.authButton, styles.authButtonFacebook]}
-            onPress={() => handleLogin('Facebook')}
-            activeOpacity={0.9}
-          >
-            <FontAwesome name="facebook" color="#1877F2" size={22} style={{ marginRight: 12 }} />
-            <Text style={styles.authButtonTextDark}>Continue with Facebook</Text>
+            <Text style={[styles.authButtonTextDark, { color: '#1C1917' }]}>Get Started</Text>
           </TouchableOpacity>
 
           {/* Micro-copy for professionalism */}

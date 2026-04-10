@@ -4,8 +4,11 @@ import { useRouter } from 'expo-router';
 import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { MOCK_MEMBERS, MOCK_TRIPS } from '../src/constants/mockData';
+import { MOCK_MEMBERS } from '../src/constants/mockData';
+import { useTravelStore } from '../src/store/useTravelStore';
 import { SplitType } from '../src/types/expense';
+import { useLocationSearch, LocationResult } from '../src/hooks/useLocationSearch';
+import { Search } from 'lucide-react-native';
 
 const { height, width } = Dimensions.get('window');
 
@@ -21,6 +24,10 @@ export default function AddMomentScreen() {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [isExpenseMode, setIsExpenseMode] = useState(false);
+  
+  // Location feature
+  const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
+  const { query, setQuery, results, isSearching } = useLocationSearch();
   
   // Expense States
   const [expenseAmount, setExpenseAmount] = useState('');
@@ -40,6 +47,8 @@ export default function AddMomentScreen() {
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<any>(null);
 
+  const { trips, addExpense, addPost } = useTravelStore();
+
   useEffect(() => {
     if (!cameraPermission?.granted) {
       requestCameraPermission();
@@ -52,14 +61,14 @@ export default function AddMomentScreen() {
     const todayDate = new Date(todayStr);
     
     // 1. Find ongoing
-    const ongoingTrip = MOCK_TRIPS.find(t => t.startDate <= todayStr && t.endDate >= todayStr);
+    const ongoingTrip = trips.find(t => t.startDate <= todayStr && t.endDate >= todayStr);
     if (ongoingTrip) {
       setSelectedTripId(ongoingTrip.id);
-    } else {
+    } else if (trips.length > 0) {
       // 2. Find closest
-      let closestId = MOCK_TRIPS[0]?.id;
+      let closestId = trips[0]?.id;
       let minDiff = Infinity;
-      MOCK_TRIPS.forEach(t => {
+      trips.forEach(t => {
          const tDate = new Date(t.startDate);
          const diff = Math.abs(todayDate.getTime() - tDate.getTime());
          if (diff < minDiff) {
@@ -69,9 +78,9 @@ export default function AddMomentScreen() {
       });
       if (closestId) setSelectedTripId(closestId);
     }
-  }, [cameraPermission]);
+  }, [cameraPermission, trips]);
 
-  const selectedTrip = MOCK_TRIPS.find(t => t.id === selectedTripId);
+  const selectedTrip = trips.find(t => t.id === selectedTripId);
 
   const toggleCameraFacing = () => setFacing(current => (current === 'back' ? 'front' : 'back'));
   const toggleFlash = () => setFlash(current => (current === 'off' ? 'on' : 'off'));
@@ -124,12 +133,44 @@ export default function AddMomentScreen() {
       Alert.alert("Error", "Please select a trip first.");
       return;
     }
-    if (isExpenseMode && !expenseAmount) {
-      Alert.alert("Missing Amount", "Please enter valid amount to create an expense.");
-      return;
+    if (isExpenseMode) {
+      if (!expenseAmount) {
+        Alert.alert("Missing Amount", "Please enter valid amount to create an expense.");
+        return;
+      }
+      addExpense({
+        id: 'e' + Date.now().toString(),
+        tripId: selectedTripId,
+        desc: content || 'Untitled Expense',
+        amount: parseInt(expenseAmount.replace(/,/g, ''), 10) || 0,
+        payerId: 'm1', // Default to current user
+        date: new Date().toISOString().split('T')[0],
+        category: 'OTHER',
+        splits: {}
+      });
+    } else {
+      if (!content && images.length === 0) {
+        Alert.alert("Missing Input", "Add a photo or write something.");
+        return;
+      }
+      addPost({
+        id: 'p' + Date.now().toString(),
+        tripId: selectedTripId,
+        authorId: 'm1',
+        authorName: 'You (Edric)',
+        content: content,
+        images: images,
+        locationName: selectedLocation?.name,
+        locationCity: selectedLocation?.city,
+        timestamp: 'Just now',
+        date: new Date().toISOString().split('T')[0],
+        likes: 0,
+        hasLiked: false,
+        comments: []
+      });
     }
     
-    // Simulate successful save
+    // Simulate successful save visually then go back
     Alert.alert("Success", "Moment added successfully!", [
        {text: "OK", onPress: () => router.back()}
     ]);
@@ -240,7 +281,7 @@ export default function AddMomentScreen() {
 
           {showTripSelector && (
             <View style={styles.tripDropdown}>
-               {MOCK_TRIPS.map(t => (
+               {trips.map(t => (
                   <TouchableOpacity 
                     key={t.id} 
                     style={[styles.tripDropdownItem, selectedTripId === t.id && {backgroundColor: 'rgba(255,200,0,0.1)'}]}
@@ -250,6 +291,11 @@ export default function AddMomentScreen() {
                     <Text style={styles.tripDropdownDates}>{t.startDate}</Text>
                   </TouchableOpacity>
                ))}
+               {trips.length === 0 && (
+                  <View style={{ padding: 16 }}>
+                    <Text style={{ color: '#A8A29E' }}>No trips available.</Text>
+                  </View>
+               )}
             </View>
           )}
 
@@ -264,6 +310,52 @@ export default function AddMomentScreen() {
                value={content}
                onChangeText={setContent}
              />
+          </View>
+
+          {/* Location Search Input (Free Nominatim API) */}
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 32, padding: 20, marginBottom: 16 }}>
+             <Text style={[styles.fieldLabel, { color: '#8C8C8C' }]}>Location (Tag)</Text>
+             {selectedLocation ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#1C1917' }}>📍 {selectedLocation.name}</Text>
+                    <Text style={{ fontSize: 13, color: '#A8A29E', marginTop: 2 }}>{selectedLocation.city}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => { setSelectedLocation(null); setQuery(''); }}>
+                     <X size={20} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+             ) : (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 8, marginTop: 4 }}>
+                    <Search size={18} color="#A8A29E" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={{ flex: 1, fontSize: 16, fontWeight: '500', color: '#1C1917' }}
+                      placeholder="Search on OpenStreetMap..."
+                      placeholderTextColor="#D0D0D0"
+                      value={query}
+                      onChangeText={setQuery}
+                    />
+                  </View>
+                  
+                  {isSearching && <Text style={{ color: '#A8A29E', fontSize: 12, marginTop: 8 }}>Searching OSM...</Text>}
+                  
+                  {results.length > 0 && (
+                    <View style={{ marginTop: 12 }}>
+                      {results.map((r) => (
+                        <TouchableOpacity 
+                          key={r.placeId} 
+                          style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F4' }}
+                          onPress={() => setSelectedLocation(r)}
+                        >
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: '#1C1917' }}>{r.name}</Text>
+                          <Text style={{ fontSize: 12, color: '#78716C', marginTop: 2 }}>{r.address}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+             )}
           </View>
 
           {isExpenseMode && (

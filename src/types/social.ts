@@ -1,5 +1,8 @@
 export interface Comment {
   id: string;
+  locationName?: string;
+  locationCity?: string;
+  tripId?: string;
   authorId: string;
   authorName: string;
   text: string;
@@ -8,6 +11,9 @@ export interface Comment {
 
 export interface Post {
   id: string;
+  locationName?: string;
+  locationCity?: string;
+  tripId?: string;
   authorId: string;
   authorName: string;
   content: string;

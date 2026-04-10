@@ -1,20 +1,25 @@
 import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
 import { AppState } from 'react-native'
-import { MMKV } from 'react-native-mmkv'
-
-export const storage = new MMKV()
+import * as SecureStore from 'expo-secure-store'
 
 const supabaseStorage = {
-  setItem: (key: string, value: string) => {
-    storage.set(key, value)
+  setItem: async (key: string, value: string) => {
+    try {
+      await SecureStore.setItemAsync(key, value)
+    } catch (e) {}
   },
-  getItem: (key: string) => {
-    const value = storage.getString(key)
-    return value ?? null
+  getItem: async (key: string) => {
+    try {
+      return await SecureStore.getItemAsync(key)
+    } catch (e) {
+      return null
+    }
   },
-  removeItem: (key: string) => {
-    storage.delete(key)
+  removeItem: async (key: string) => {
+    try {
+      await SecureStore.deleteItemAsync(key)
+    } catch (e) {}
   },
 }
 

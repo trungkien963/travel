@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon, Heart, MessageCircle, Share2, Pencil, Camera as CameraIcon, Download } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useTravelStore } from '../../src/store/useTravelStore';
 import { MOCK_MEMBERS } from '../../src/constants/mockData';
 import { useTrip } from '../../src/hooks/useTrip';
 import { useSocial } from '../../src/hooks/useSocial';
@@ -30,8 +31,8 @@ export default function TripDetailsScreen() {
   const [activeTab, setActiveTab] = useState('SOCIAL');
   
   const { trip, isOwner, currentUserId, addMember, editMember, removeMember, updateTrip } = useTrip(id as string);
-  const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial();
-  const { expenses, saveExpense, deleteExpense } = useExpenses();
+  const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial(id as string);
+  const { expenses, saveExpense, deleteExpense } = useExpenses(id as string);
   const { netBalances, debts } = useBalances(expenses, trip?.members || []);
   
   // Modal Visibility States
@@ -589,7 +590,29 @@ export default function TripDetailsScreen() {
                 <TouchableOpacity style={[styles.deleteBtn, {flex: 1, backgroundColor: '#FFC800', borderWidth: 0}]} onPress={() => Alert.alert('Published!', 'Your amazing adventure is now live on the Discover feed for the world to see.')}>
                   <Text style={[styles.deleteBtnText, {color: '#1C1917'}]}>Publish Trip</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.deleteBtn, {flex: 1}]}><Trash2 size={18} color="#DC2626" /><Text style={styles.deleteBtnText}>Delete Trip</Text></TouchableOpacity>
+                <TouchableOpacity 
+                   style={[styles.deleteBtn, {flex: 1}]}
+                   onPress={() => {
+                      Alert.alert(
+                        'Delete Adventure', 
+                        'Are you sure you want to permanently delete this trip and all its moments?', 
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { 
+                            text: 'Delete', 
+                            style: 'destructive', 
+                            onPress: () => {
+                              useTravelStore.getState().deleteTrip(id as string);
+                              router.replace('/(tabs)/trips');
+                            }
+                          }
+                        ]
+                      );
+                   }}
+                >
+                  <Trash2 size={18} color="#DC2626" />
+                  <Text style={styles.deleteBtnText}>Delete Trip</Text>
+                </TouchableOpacity>
              </View>
           </View>
         )}
