@@ -1,0 +1,81 @@
+-- 1. Create custom types
+CREATE TYPE trip_member_role AS ENUM ('admin', 'member');
+CREATE TYPE expense_type AS ENUM ('deposit', 'hotel', 'flight', 'transport', 'food', 'activity', 'other');
+
+-- 2. Users Table
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  display_name TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Trips Table
+CREATE TABLE public.trips (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  total_budget DECIMAL(12, 2) DEFAULT 0,
+  cover_url TEXT,
+  is_public BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Trip Members
+CREATE TABLE public.trip_members (
+  trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role trip_member_role DEFAULT 'member',
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (trip_id, user_id)
+);
+
+-- 5. Trip Expenses
+CREATE TABLE public.trip_expenses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
+  payer_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  description TEXT NOT NULL,
+  category expense_type DEFAULT 'other',
+  is_settled BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Expense Splits
+CREATE TABLE public.expense_splits (
+  expense_id UUID REFERENCES public.trip_expenses(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  amount_owed DECIMAL(12, 2) NOT NULL,
+  is_paid BOOLEAN DEFAULT false,
+  PRIMARY KEY (expense_id, user_id)
+);
+
+-- 7. Posts (Moments)
+CREATE TABLE public.posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  expense_id UUID REFERENCES public.trip_expenses(id) ON DELETE SET NULL,
+  primary_photo_url TEXT NOT NULL,
+  secondary_photo_url TEXT, -- For locket style or receipts
+  caption TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Setup basic Row Level Security (RLS)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trip_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trip_expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expense_splits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+
+-- Note: RLS policies (SELECT/INSERT/UPDATE) should be added later based on app logic requirements.
