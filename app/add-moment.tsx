@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert, Image, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert, Image, SafeAreaView, ScrollView, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin } from 'lucide-react-native';
+import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MOCK_MEMBERS } from '../src/constants/mockData';
@@ -45,6 +45,10 @@ export default function AddMomentScreen() {
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [isDualMode, setIsDualMode] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [isAddingMore, setIsAddingMore] = useState(false);
+  const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<any>(null);
 
@@ -99,13 +103,25 @@ export default function AddMomentScreen() {
     try {
       if (isDualMode) {
         const photo1 = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+        setIsFlipping(true);
         setFacing(current => (current === 'back' ? 'front' : 'back'));
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 800)); // Increase wait for slower Android hardware
         const photo2 = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-        setImages([photo1.uri, photo2.uri]);
+        setIsFlipping(false);
+        if (isAddingMore) {
+          setImages(prev => [...prev, photo1.uri, photo2.uri]);
+          setIsAddingMore(false);
+        } else {
+          setImages([photo1.uri, photo2.uri]);
+        }
       } else {
         const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-        setImages([photo.uri]);
+        if (isAddingMore) {
+          setImages(prev => [...prev, photo.uri]);
+          setIsAddingMore(false);
+        } else {
+          setImages([photo.uri]);
+        }
       }
     } catch (e) {
       Alert.alert("Error", "Could not take picture.");
@@ -122,7 +138,12 @@ export default function AddMomentScreen() {
         quality: 0.8,
       });
       if (!result.canceled) { 
-        setImages(result.assets.map(a => a.uri)); 
+        if (isAddingMore) {
+          setImages(prev => [...prev, ...result.assets.map(a => a.uri)]);
+          setIsAddingMore(false);
+        } else {
+          setImages(result.assets.map(a => a.uri)); 
+        }
       }
     } catch (error) {
       Alert.alert("Unavailable", "Cannot open library.");
@@ -198,19 +219,22 @@ export default function AddMomentScreen() {
     <View style={styles.container}>
       {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
       <View style={styles.cameraSection}>
-        {images.length > 0 ? (
+        {isFlipping && (
+          <View style={{...StyleSheet.absoluteFillObject, backgroundColor: '#FFF', zIndex: 999, justifyContent: 'center', alignItems: 'center'}}>
+            <RefreshCcw size={48} color="#000" />
+            <Text style={{ marginTop: 24, fontSize: 18, fontWeight: '800', color: '#000' }}>Hold on! Flipping...</Text>
+          </View>
+        )}
+        
+        {(images.length > 0 && !isAddingMore) ? (
           <View style={{ flex: 1 }}>
-            <Image source={{ uri: images[0] }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
+            <Image source={{ uri: images[Math.min(selectedPreviewIndex, Math.max(0, images.length - 1))] }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
             {images.length === 2 && isDualMode && (
               <View style={[styles.pipContainer, { top: 100, left: 24 }]}>
                 <Image source={{ uri: images[1] }} style={styles.pipImage} />
               </View>
             )}
-            {images.length > 1 && !isDualMode && (
-              <View style={{position: 'absolute', bottom: 20, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 12}}>
-                 <Text style={{color: '#FFF', fontWeight: 'bold'}}>+{images.length - 1} more</Text>
-              </View>
-            )}
+
           </View>
         ) : (
           cameraPermission?.granted ? (
@@ -226,11 +250,15 @@ export default function AddMomentScreen() {
 
         {/* Top Controls Overlay */}
         <SafeAreaView style={styles.topControls}>
-          <TouchableOpacity onPress={() => images.length > 0 ? setImages([]) : router.back()} style={styles.iconCircle}>
+          <TouchableOpacity onPress={() => {
+              if (isAddingMore) setIsAddingMore(false);
+              else if (images.length > 0) setImages([]); 
+              else router.back();
+            }} style={styles.iconCircle}>
             <X size={24} color="#FFF" />
           </TouchableOpacity>
 
-          {!images.length && (
+          {(!images.length || isAddingMore) && (
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity style={styles.iconCircle} onPress={pickImage}>
                 <ImageIcon color="#FFF" size={20} />
@@ -243,11 +271,19 @@ export default function AddMomentScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {(images.length > 0 && !isAddingMore && !isDualMode) && (
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity style={styles.iconCircle} onPress={() => setIsAddingMore(true)}>
+                <Plus size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          )}
         </SafeAreaView>
 
         {/* Bottom Controls Overlay (Shutter) */}
         <View style={styles.shutterContainer}>
-          {images.length > 0 ? (
+          {(images.length > 0 && !isAddingMore) ? (
             <TouchableOpacity style={styles.retakeBtn} onPress={() => setImages([])}>
               <Text style={styles.retakeText}>Retake</Text>
             </TouchableOpacity>
@@ -269,6 +305,37 @@ export default function AddMomentScreen() {
       {/* BOTTOM FORM SECTION */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+          {images.length > 0 && !isDualMode && (
+             <View style={{ marginBottom: 24 }}>
+               <Text style={{ color: '#8C8C8C', fontSize: 12, fontWeight: '800', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Selected Photos ({images.length})</Text>
+               <ScrollView 
+                 horizontal 
+                 showsHorizontalScrollIndicator={false}
+                 contentContainerStyle={{ gap: 12 }}
+               >
+                 {images.map((img, idx) => (
+                   <TouchableOpacity 
+                     key={idx} 
+                     activeOpacity={0.8}
+                     onPress={() => setViewingImageIndex(idx)}
+                     style={{ width: 80, height: 100, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#FFF', elevation: 2 }}
+                   >
+                     <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} />
+                     <TouchableOpacity 
+                       style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12, padding: 4 }}
+                       onPress={() => {
+                          setImages(prev => prev.filter((_, i) => i !== idx));
+                          if (selectedPreviewIndex === idx) setSelectedPreviewIndex(0);
+                          else if (selectedPreviewIndex > idx) setSelectedPreviewIndex(prev => prev - 1);
+                       }}
+                     >
+                       <X size={12} color="#FFF" />
+                     </TouchableOpacity>
+                   </TouchableOpacity>
+                 ))}
+               </ScrollView>
+             </View>
+          )}
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
              <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900' }}>Add Details</Text>
@@ -445,6 +512,39 @@ export default function AddMomentScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* FULLSCREEN IMAGE VIEWER MODAL */}
+      <Modal visible={viewingImageIndex !== null} transparent={true} animationType="fade" onRequestClose={() => setViewingImageIndex(null)}>
+         <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
+            {viewingImageIndex !== null && images[viewingImageIndex] && (
+               <Image 
+                 source={{ uri: images[viewingImageIndex] }} 
+                 style={{ width: '100%', height: '80%', resizeMode: 'contain' }} 
+               />
+            )}
+            
+            {/* Top Bar for Viewer */}
+            <SafeAreaView style={{ position: 'absolute', top: 0, width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 }}>
+               <TouchableOpacity onPress={() => setViewingImageIndex(null)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 12, borderRadius: 24 }}>
+                  <X size={24} color="#FFF" />
+               </TouchableOpacity>
+               
+               <TouchableOpacity 
+                 onPress={() => {
+                   if (viewingImageIndex !== null) {
+                     setImages(prev => prev.filter((_, i) => i !== viewingImageIndex));
+                     setViewingImageIndex(null);
+                   }
+                 }} 
+                 style={{ backgroundColor: 'rgba(239,68,68,0.8)', padding: 12, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+               >
+                  <Text style={{ color: '#FFF', fontWeight: '800' }}>DELETE</Text>
+                  <X size={18} color="#FFF" />
+               </TouchableOpacity>
+            </SafeAreaView>
+         </View>
+      </Modal>
+
     </View>
   );
 }

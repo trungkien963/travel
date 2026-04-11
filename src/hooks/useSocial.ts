@@ -57,11 +57,17 @@ export function useSocial(tripId?: string) {
       }
     }
 
+    const { currentUserProfile, trips } = useTravelStore.getState();
+    const trip = trips.find(t => t.id === (targetTripId || tripId));
+    const userMember = trip?.members.find(m => m.id === authorId);
+    const authorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
+
     const newPost: Post & { tripId?: string } = {
       id: 'p' + Date.now().toString(),
       tripId: targetTripId || tripId,
       authorId,
       authorName,
+      authorAvatar,
       content,
       images: uploadedImages,
       isDual: isDual || false,

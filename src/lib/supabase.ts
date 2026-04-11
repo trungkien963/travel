@@ -49,56 +49,21 @@ AppState.addEventListener('change', (state) => {
   }
 })
 
-// Polyfill specifically for React Native to ArrayBuffer conversion
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const lookup = new Uint8Array(256);
-for (let i = 0; i < chars.length; i++) {
-  lookup[chars.charCodeAt(i)] = i;
-}
-
-const customBase64Decode = (base64: string): ArrayBuffer => {
-  let bufferLength = base64.length * 0.75;
-  let len = base64.length;
-  let i = 0;
-  let p = 0;
-  let encoded1, encoded2, encoded3, encoded4;
-
-  if (base64[base64.length - 1] === "=") {
-    bufferLength--;
-    if (base64[base64.length - 2] === "=") {
-      bufferLength--;
-    }
-  }
-
-  const arraybuffer = new ArrayBuffer(bufferLength);
-  const bytes = new Uint8Array(arraybuffer);
-
-  for (i = 0; i < len; i += 4) {
-    encoded1 = lookup[base64.charCodeAt(i)];
-    encoded2 = lookup[base64.charCodeAt(i + 1)];
-    encoded3 = lookup[base64.charCodeAt(i + 2)];
-    encoded4 = lookup[base64.charCodeAt(i + 3)];
-
-    bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-    bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
-    bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
-  }
-
-  return arraybuffer;
-};
-
 export const uploadMediaToSupabase = async (uri: string): Promise<string> => {
   try {
     const fileName = `media_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-    // React Native's most bulletproof way for Supabase is passing raw bytes from base64
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-    const buffer = customBase64Decode(base64);
+    const formData = new FormData();
+    formData.append('file', {
+      uri: uri,
+      name: fileName,
+      type: 'image/jpeg',
+    } as any);
 
     const { data, error } = await supabase.storage
       .from('nomadsync-media')
-      .upload(fileName, buffer, {
-        contentType: 'image/jpeg',
+      .upload(fileName, formData, {
+        contentType: 'multipart/form-data',
       });
 
     if (error) {
