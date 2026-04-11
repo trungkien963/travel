@@ -61,7 +61,7 @@ export const uploadMediaToSupabase = async (uri: string): Promise<string> => {
     } as any);
 
     const { data, error } = await supabase.storage
-      .from('nomadsync-media')
+      .from('travel-images')
       .upload(fileName, formData, {
         contentType: 'multipart/form-data',
       });
@@ -72,7 +72,7 @@ export const uploadMediaToSupabase = async (uri: string): Promise<string> => {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('nomadsync-media')
+      .from('travel-images')
       .getPublicUrl(fileName);
 
     return publicUrl;

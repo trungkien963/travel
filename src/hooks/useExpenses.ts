@@ -80,8 +80,21 @@ export function useExpenses(tripId?: string) {
 
   const deleteExpenseWrapper = async (id: string) => {
     const { setGlobalLoading } = useTravelStore.getState();
+    const expense = allExpenses.find(e => e.id === id);
     setGlobalLoading(true);
     try {
+      if (expense?.receipts?.length) {
+        const pathsToDelete = expense.receipts
+           .filter(url => url && url.includes('/nomadsync-media/'))
+           .map(url => url.split('/nomadsync-media/')[1]);
+        
+        // Bypass Postgres trigger error
+        await supabase.from('expenses').update({ receipt_urls: null }).eq('id', id);
+        if (pathsToDelete.length > 0) {
+           await supabase.storage.from('nomadsync-media').remove(pathsToDelete);
+        }
+      }
+
       const { error } = await supabase.from('expenses').delete().eq('id', id);
       if (error) throw error;
       deleteExpense(id);

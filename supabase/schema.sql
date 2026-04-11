@@ -1,6 +1,6 @@
 -- 1. Create custom types
 CREATE TYPE trip_member_role AS ENUM ('admin', 'member');
-CREATE TYPE expense_type AS ENUM ('deposit', 'hotel', 'flight', 'transport', 'food', 'activity', 'other');
+CREATE TYPE expense_type AS ENUM ('FOOD', 'TRANSPORT', 'HOTEL', 'ACTIVITIES', 'SHOPPING', 'OTHER');
 
 -- 2. Users Table
 CREATE TABLE public.users (
@@ -20,6 +20,9 @@ CREATE TABLE public.trips (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   cover_image TEXT,
+  location_name TEXT,
+  location_city TEXT,
+  owner_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   members JSONB DEFAULT '[]'::jsonb,
   is_private BOOLEAN DEFAULT false,
   total_budget DECIMAL(12, 2) DEFAULT 0,
@@ -45,7 +48,7 @@ CREATE TABLE public.expenses (
   payer_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   amount DECIMAL(12, 2) NOT NULL,
   description TEXT NOT NULL,
-  category expense_type DEFAULT 'other',
+  category expense_type DEFAULT 'OTHER',
   splits JSONB DEFAULT '{}'::jsonb,
   receipt_urls TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),

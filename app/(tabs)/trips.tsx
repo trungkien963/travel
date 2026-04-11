@@ -532,13 +532,15 @@ export default function MyTripsScreen() {
                           }
                        }
 
+                       const { data: authData } = await supabase.auth.getUser();
+                       const authUser = authData?.user;
                        const newTripId = 't' + Date.now().toString();
                        const ownerMember = {
-                         id: currentUser?.id || useTravelStore.getState().currentUserId,
-                         name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Me',
-                         email: currentUser?.email,
+                         id: authUser?.id || currentUser?.id || useTravelStore.getState().currentUserId,
+                         name: authUser?.user_metadata?.full_name || currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Me',
+                         email: authUser?.email || currentUser?.email,
                          isMe: true,
-                         avatar: currentUser?.user_metadata?.avatar_url
+                         avatar: authUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.avatar_url
                        };
 
                        const guestMembers = members.map((email, idx) => ({

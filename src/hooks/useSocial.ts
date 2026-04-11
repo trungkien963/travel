@@ -138,8 +138,21 @@ export function useSocial(tripId?: string) {
 
   const deletePost = async (postId: string) => {
     const { setGlobalLoading } = useTravelStore.getState();
+    const post = allPosts.find(p => p.id === postId);
     setGlobalLoading(true);
     try {
+      if (post?.images?.length) {
+        const pathsToDelete = post.images
+           .filter(url => url && url.includes('/nomadsync-media/'))
+           .map(url => url.split('/nomadsync-media/')[1]);
+
+        // Bypass Postgres trigger error
+        await supabase.from('posts').update({ image_urls: null }).eq('id', postId);
+        if (pathsToDelete.length > 0) {
+           await supabase.storage.from('nomadsync-media').remove(pathsToDelete);
+        }
+      }
+
       const { error } = await supabase.from('posts').delete().eq('id', postId);
       if (error) throw error;
       deleteStorePost(postId);

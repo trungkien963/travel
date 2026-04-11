@@ -63,11 +63,35 @@ export const useTravelStore = create<TravelState>()(
       })),
       deleteTrip: async (id) => {
         try {
+          const state = get();
+          const trip = state.trips.find(t => t.id === id);
+          const expenses = state.expenses.filter(e => e.tripId === id);
+          const posts = state.posts.filter(p => p.tripId === id);
+          
+          const urlsToDelete: string[] = [];
+          if (trip?.coverImage) urlsToDelete.push(trip.coverImage);
+          expenses.forEach(e => { if (e.receipts) urlsToDelete.push(...e.receipts); });
+          posts.forEach(p => { if (p.images) urlsToDelete.push(...p.images); });
+          
+          const pathsToDelete = urlsToDelete
+             .filter(url => url && url.includes('/nomadsync-media/'))
+             .map(url => url.split('/nomadsync-media/')[1]);
+
+          // Bypass Postgres triggers on storage.objects by clearing URLs before deletion
+          await supabase.from('expenses').update({ receipt_urls: null }).eq('trip_id', id);
+          await supabase.from('posts').update({ image_urls: null }).eq('trip_id', id);
+          await supabase.from('trips').update({ cover_image: null }).eq('id', id);
+
           const { error } = await supabase.from('trips').delete().eq('id', id);
           if (error) {
             console.error("Delete trip failed on cloud", error);
             throw error;
           }
+          
+          if (pathsToDelete.length > 0) {
+            await supabase.storage.from('nomadsync-media').remove(pathsToDelete);
+          }
+
           set((state) => ({
             trips: state.trips.filter(t => t.id !== id),
             expenses: state.expenses.filter(e => e.tripId !== id),
@@ -112,6 +136,13 @@ export const useTravelStore = create<TravelState>()(
       setupRealtimeNotifications: () => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
+
+        // Prevent adding callbacks after subscribe by cleaning up existing channels first
+        supabase.getChannels().forEach(channel => {
+            if (channel.topic === 'realtime:public:notifications' || channel.topic === 'realtime:public:sync') {
+                supabase.removeChannel(channel);
+            }
+        });
 
         // Fetch initial notifications
         supabase.from('notifications')
@@ -171,17 +202,81 @@ export const useTravelStore = create<TravelState>()(
           )
           .subscribe();
 
-        // Setup realtime subscription for data sync
+        // Setup realtime subscription for data sync (Delta Update Architecture)
+        const handlePostDelta = (payload: any) => {
+           const state = get();
+           if (payload.eventType === 'DELETE') {
+             set((s) => ({ posts: s.posts.filter(p => p.id !== payload.old.id) }));
+             return;
+           }
+           const p = payload.new;
+           const trip = state.trips.find(t => t.id === p.trip_id);
+           const author = trip?.members?.find((m: any) => m.id === p.user_id);
+           
+           const formattedPost: Post = {
+              id: p.id,
+              tripId: p.trip_id,
+              authorId: p.user_id,
+              authorName: author?.name || 'Traveler',
+              authorAvatar: author?.avatar || undefined,
+              content: p.content || '',
+              images: p.image_urls || [],
+              isDual: p.is_dual_camera || false,
+              timestamp: p.created_at || new Date().toISOString(),
+              date: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              likes: Array.isArray(p.likes) ? p.likes.length : 0,
+              hasLiked: Array.isArray(p.likes) ? p.likes.includes(state.currentUserId) : false,
+              comments: p.comments && Array.isArray(p.comments) ? p.comments : []
+           };
+
+           if (payload.eventType === 'INSERT') {
+             set((s) => {
+               if (s.posts.some(existing => existing.id === formattedPost.id)) return s;
+               return { posts: [formattedPost, ...s.posts] };
+             });
+           } else if (payload.eventType === 'UPDATE') {
+             set((s) => ({
+               posts: s.posts.map(existing => existing.id === formattedPost.id ? formattedPost : existing)
+             }));
+           }
+        };
+
+        const handleExpenseDelta = (payload: any) => {
+           if (payload.eventType === 'DELETE') {
+             set((s) => ({ expenses: s.expenses.filter(e => e.id !== payload.old.id) }));
+             return;
+           }
+           const e = payload.new;
+           const formattedExpense: Expense = {
+              id: e.id,
+              tripId: e.trip_id,
+              amount: e.amount,
+              desc: e.description || '',
+              date: e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              payerId: e.payer_id || 'Traveler',
+              category: e.category || 'OTHER',
+              splits: e.splits || {},
+              receipts: e.receipt_urls || []
+           };
+           
+           if (payload.eventType === 'INSERT') {
+             set((s) => {
+                if (s.expenses.some(existing => existing.id === formattedExpense.id)) return s;
+                return { expenses: [formattedExpense, ...s.expenses] };
+             });
+           } else if (payload.eventType === 'UPDATE') {
+             set((s) => ({
+                expenses: s.expenses.map(existing => existing.id === formattedExpense.id ? formattedExpense : existing)
+             }));
+           }
+        };
+
         const syncChannel = supabase.channel('public:sync')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
-            get().refreshData();
+             get().refreshData(); // Trips have complex deep relations, safe to refresh on rare trip updates
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
-            get().refreshData();
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-            get().refreshData();
-          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, handleExpenseDelta)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, handlePostDelta)
           .subscribe();
       },
 
