@@ -31,7 +31,7 @@ export function useSocial(tripId?: string) {
     
     const newComment: Comment = {
       id: 'c' + Date.now().toString(),
-      authorId: currentUserId || 'm1',
+      authorId: currentUserId,
       authorName: commentAuthorName,
       authorAvatar: commentAuthorAvatar,
       text: text,
@@ -83,7 +83,7 @@ export function useSocial(tripId?: string) {
     
     // 3. (Optional) Sync to Supabase DB if user is logged in
     const { currentUserId } = useTravelStore.getState();
-    if (currentUserId && currentUserId !== 'm1') {
+    if (currentUserId) {
        supabase.from('posts').insert([{
          id: newPost.id.replace('p', ''), // Supabase wants UUID, maybe generate one? Or let DB generate it. 
          // For now, doing it offline first is fine, but here's the API call.

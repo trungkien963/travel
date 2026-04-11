@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, RefreshControl } from 'react-native';
 import { Settings, Shield, HelpCircle, ChevronRight, LogOut, Edit3, Compass } from 'lucide-react-native';
 import { supabase } from '../../src/lib/supabase';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,15 @@ import { useTravelStore } from '../../src/store/useTravelStore';
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const { refreshData } = useTravelStore();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
+
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -27,7 +36,13 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC800" />
+        }
+      >
           
           <Text style={styles.headerTitle}>Profile</Text>
 

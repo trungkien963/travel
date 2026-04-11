@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image } from 'react-native';
 import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, Image as ImageIcon } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadMediaToSupabase } from '../lib/supabase';
 
 interface TripFormModalProps {
   visible: boolean;
@@ -23,6 +25,7 @@ export function TripFormModal({ visible, onClose, onSave, initialData }: TripFor
   const [emailInput, setEmailInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [emailError, setEmailError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Hydrate form when initialData changes or modal opens
   useEffect(() => {
@@ -70,31 +73,65 @@ export function TripFormModal({ visible, onClose, onSave, initialData }: TripFor
     return d.toLocaleDateString('en-GB'); // Returns DD/MM/YYYY
   };
 
-  const cycleCoverImage = () => {
-    const COVERS = [
-      'https://images.unsplash.com/photo-1473496169904-6a58eb22bf2f?q=80&w=1000', // Beach
-      'https://images.unsplash.com/photo-1499678329028-101435549a4e?q=80&w=1000', // Tuscany/Summer
-      'https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=1000', // Minimalist City
-      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1000', // Road trip
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000', // Pure Tropical Beach
-    ];
-    const currentIndex = COVERS.findIndex(c => c === coverImage);
-    const nextIndex = (currentIndex + 1) % COVERS.length;
-    setCoverImage(COVERS[nextIndex]);
+  const handleImageSelection = () => {
+    Alert.alert(
+      "Cover Image",
+      "Set the vibe for your trip!",
+      [
+        {
+          text: "Snap a Photo",
+          onPress: async () => {
+             const { status } = await ImagePicker.requestCameraPermissionsAsync();
+             if (status !== 'granted') return Alert.alert('Permission needed', 'We need camera access.');
+             let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: 'images',
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+             });
+             if (!result.canceled) setCoverImage(result.assets[0].uri);
+          }
+        },
+        {
+          text: "Choose from Camera Roll",
+          onPress: async () => {
+             let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: 'images',
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+             });
+             if (!result.canceled) setCoverImage(result.assets[0].uri);
+          }
+        },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
   };
 
   const handleNext = () => {
     setStep(2);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
+    let finalCoverUrl = coverImage;
+    if (coverImage.startsWith('file://')) {
+       try {
+         finalCoverUrl = await uploadMediaToSupabase(coverImage);
+       } catch (e) {
+         Alert.alert('Upload Failed', 'Could not upload cover image. Proceeding with existing.');
+       }
+    }
+    
     onSave({
       title,
-      coverImage,
+      coverImage: finalCoverUrl,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       members
     });
+    setIsSaving(false);
     onClose();
   };
 
@@ -148,7 +185,7 @@ export function TripFormModal({ visible, onClose, onSave, initialData }: TripFor
                 {/* Cover Image */}
                 <View style={{ marginBottom: 20 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: '#A8A29E', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 1 }}>Cover Image</Text>
-                  <TouchableOpacity onPress={cycleCoverImage} style={{ width: '100%', height: 140, borderRadius: 16, backgroundColor: '#F5F5F5', overflow: 'hidden', position: 'relative' }}>
+                  <TouchableOpacity onPress={handleImageSelection} style={{ width: '100%', height: 140, borderRadius: 16, backgroundColor: '#F5F5F5', overflow: 'hidden', position: 'relative' }}>
                     <Image source={{ uri: coverImage }} style={{ width: '100%', height: '100%' }} />
                     <View style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: 'rgba(28,25,23,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                        <ImageIcon size={14} color="#FFF" />
@@ -274,8 +311,8 @@ export function TripFormModal({ visible, onClose, onSave, initialData }: TripFor
                   </ScrollView>
                 </View>
                 
-                <TouchableOpacity style={{ backgroundColor: '#FFC800', padding: 16, borderRadius: 16, alignItems: 'center' }} onPress={handleSave}>
-                  <Text style={{ color: '#1C1917', fontWeight: '800', fontSize: 16 }}>{isEditing ? 'Save Changes' : 'Create Adventure'}</Text>
+                <TouchableOpacity disabled={isSaving} style={{ backgroundColor: '#FFC800', padding: 16, borderRadius: 16, alignItems: 'center' }} onPress={handleSave}>
+                  <Text style={{ color: '#1C1917', fontWeight: '800', fontSize: 16 }}>{isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Adventure')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Image, Alert, RefreshControl } from 'react-native';
 import { Plus, X, Calendar as CalendarIcon, ArrowLeft, Mail, UserPlus, Trash2, ChevronRight, MapPin, Search, Image as ImageIcon } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTravelStore } from '../../src/store/useTravelStore';
 import { useLocationSearch, LocationResult } from '../../src/hooks/useLocationSearch';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, uploadMediaToSupabase } from '../../src/lib/supabase';
 
 export default function MyTripsScreen() {
   const router = useRouter();
@@ -81,13 +81,22 @@ export default function MyTripsScreen() {
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
   const { query, setQuery, results, isSearching } = useLocationSearch();
 
-  const { trips, addTrip } = useTravelStore();
+  const { trips, addTrip, refreshData } = useTravelStore();
+  
+  // Refresh State
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
   
   // Wizard States
   const [step, setStep] = useState<1 | 2>(1);
   const [emailInput, setEmailInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [emailError, setEmailError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleNext = () => {
     setStep(2);
@@ -140,7 +149,13 @@ export default function MyTripsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC800" />
+        }
+      >
         {/* Trip List */}
         {/* Trip List - Next Gen Style */}
         <View style={{ gap: 24, marginTop: 16 }}>
@@ -501,7 +516,22 @@ export default function MyTripsScreen() {
                   {/* Primary Action Button */}
                   <TouchableOpacity 
                     className="bg-[#FFC800] py-4 rounded-2xl items-center shadow-sm"
-                    onPress={() => {
+                    disabled={isCreating}
+                    onPress={async () => {
+                       setIsCreating(true);
+                       
+                       let finalCoverUrl = coverImage || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000';
+                       
+                       // If it's a local file URI (from image picker/camera), upload it first
+                       if (coverImage && !coverImage.startsWith('http')) {
+                          try {
+                            finalCoverUrl = await uploadMediaToSupabase(coverImage);
+                          } catch (e) {
+                            Alert.alert('Upload Failed', 'Could not upload cover image. Using default.');
+                            finalCoverUrl = 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000';
+                          }
+                       }
+
                        const newTripId = 't' + Date.now().toString();
                        const ownerMember = {
                          id: currentUser?.id || 'm1',
@@ -521,7 +551,7 @@ export default function MyTripsScreen() {
                        addTrip({
                          id: newTripId,
                          title: tripTitle || 'Untitled Trip',
-                         coverImage: coverImage || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1000',
+                         coverImage: finalCoverUrl,
                          locationName: selectedLocation?.name,
                          locationCity: selectedLocation?.city,
                          startDate: startDate.toISOString().split('T')[0],
@@ -530,15 +560,17 @@ export default function MyTripsScreen() {
                          members: [ownerMember, ...guestMembers],
                          isPrivate: true
                        });
+                       setIsCreating(false);
                        setModalVisible(false);
                        setStep(1);
                        setMembers([]);
                        setTripTitle('');
-                       // Dừng router.push() để giữ nguyên màn hình My Trips
-                       // router.push(`/trip/${newTripId}`);
+                       setCoverImage(null);
                     }}
                   >
-                    <Text className="text-[#1C1917] font-bold text-base">Create Adventure</Text>
+                    <Text className="text-[#1C1917] font-bold text-base">
+                      {isCreating ? 'Creating...' : 'Create Adventure'}
+                    </Text>
                   </TouchableOpacity>
                 </>
               )}

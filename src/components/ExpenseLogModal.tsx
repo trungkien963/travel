@@ -39,7 +39,7 @@ export function ExpenseLogModal({ visible, onClose, onSave, initialExpense, trip
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('OTHER');
   const [receiptImages, setReceiptImages] = useState<string[]>([]);
   
-  const [paidBy, setPaidBy] = useState('m1'); 
+  const [paidBy, setPaidBy] = useState(tripMembers[0]?.id || ''); 
   const [splitType, setSplitType] = useState<SplitType>('EQUALLY');
   
   const [includedMembers, setIncludedMembers] = useState<Record<string, boolean>>({});
@@ -78,7 +78,7 @@ export function ExpenseLogModal({ visible, onClose, onSave, initialExpense, trip
         setExpenseCategory('OTHER');
         setReceiptImages([]);
         setSplitType('EQUALLY');
-        setPaidBy('m1');
+        setPaidBy(tripMembers[0]?.id || '');
         setCustomSplits({});
         setIncludedMembers(Object.fromEntries(tripMembers.map(m => [m.id, true])));
         

@@ -7,7 +7,14 @@ import { ChevronLeft, MapPin, DollarSign, MessageCircle, Heart, Plane, Bell } fr
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { notifications } = useTravelStore();
+  const { notifications, refreshData } = useTravelStore();
+
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -105,6 +112,8 @@ export default function NotificationsScreen() {
         data={notifications}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={

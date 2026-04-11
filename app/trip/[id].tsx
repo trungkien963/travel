@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, Image as ImageIcon, Heart, MessageCircle, Share2, Pencil, Camera as CameraIcon, Download } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +34,14 @@ export default function TripDetailsScreen() {
   React.useEffect(() => {
     if (tab) setActiveTab(tab as string);
   }, [tab]);
+  
+  const { refreshData } = useTravelStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
   
   const { trip, isOwner, currentUserId, addMember, editMember, removeMember, updateTrip } = useTrip(id as string);
   const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial(id as string);
@@ -247,7 +255,13 @@ export default function TripDetailsScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC800" />
+        }
+      >
         {/* Header Cover Image Area */}
         <View style={styles.coverContainer}>
           <Image 

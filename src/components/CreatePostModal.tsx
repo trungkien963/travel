@@ -29,7 +29,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
   // Expense Toggles and States
   const [isExpenseMode, setIsExpenseMode] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState('');
-  const [paidBy, setPaidBy] = useState('m1'); 
+  const [paidBy, setPaidBy] = useState(tripMembers[0]?.id || ''); 
   const [splitType, setSplitType] = useState<SplitType>('EQUALLY');
   const [includedMembers, setIncludedMembers] = useState<Record<string, boolean>>({});
   const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
@@ -58,7 +58,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
         setImages([]);
         setIsExpenseMode(false);
         setExpenseAmount('');
-        setPaidBy('m1');
+        // We'll set paidBy later dynamically
         setSplitType('EQUALLY');
         setCustomSplits({});
         if (tripMembers?.length > 0) {

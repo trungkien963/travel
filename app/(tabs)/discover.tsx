@@ -1,13 +1,30 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, StatusBar, RefreshControl } from 'react-native';
 import { MapPin, Sparkles, Bell } from 'lucide-react-native';
 import { Link, useRouter } from 'expo-router';
+import { useTravelStore } from '../../src/store/useTravelStore';
 
 export default function DiscoverScreen() {
   const router = useRouter();
+  const { refreshData } = useTravelStore();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFC800" />
+        }
+      >
         
         {/* Sleek Modern Header */}
         <View style={styles.header}>
