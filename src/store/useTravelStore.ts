@@ -293,7 +293,8 @@ export const useTravelStore = create<TravelState>()(
               date: e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
               payerId: e.payer_id || 'Traveler',
               category: e.category || 'OTHER',
-              splits: e.splits || {} // Now reads from DB JSONB
+              splits: e.splits || {}, // Now reads from DB JSONB
+              receipts: e.receipt_urls || []
             }));
           }
 

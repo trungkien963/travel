@@ -47,6 +47,7 @@ CREATE TABLE public.expenses (
   description TEXT NOT NULL,
   category expense_type DEFAULT 'other',
   splits JSONB DEFAULT '{}'::jsonb,
+  receipt_urls TEXT[] DEFAULT '{}',
   is_settled BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

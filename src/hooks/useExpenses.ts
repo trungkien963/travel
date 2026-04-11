@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Expense } from '../types/expense';
 import { useTravelStore } from '../store/useTravelStore';
-import { supabase } from '../lib/supabase';
+import { supabase, uploadMediaToSupabase } from '../lib/supabase';
 
 export function useExpenses(tripId?: string) {
   const { expenses: allExpenses, addExpense, updateExpense: updateStoreExpense, deleteExpense } = useTravelStore();
@@ -17,16 +17,35 @@ export function useExpenses(tripId?: string) {
     setGlobalLoading(true);
     
     try {
+      let uploadedReceipts = expense.receipts || [];
+      if (expense.receipts && expense.receipts.length > 0) {
+         uploadedReceipts = [];
+         for (const uri of expense.receipts) {
+           if (uri.startsWith('file://')) {
+             try {
+               const publicUrl = await uploadMediaToSupabase(uri);
+               uploadedReceipts.push(publicUrl);
+             } catch (e) {
+               console.warn("Failed to upload receipt", e);
+               uploadedReceipts.push(uri);
+             }
+           } else {
+             uploadedReceipts.push(uri);
+           }
+         }
+      }
+
       if (isEditing) {
         const { error } = await supabase.from('expenses').update({
           amount: expense.amount,
           description: expense.desc,
           category: expense.category || 'OTHER',
-          splits: expense.splits || {}
+          splits: expense.splits || {},
+          receipt_urls: uploadedReceipts
         }).eq('id', expense.id);
         
         if (error) throw error;
-        updateStoreExpense(expense.id, expense);
+        updateStoreExpense(expense.id, { ...expense, receipts: uploadedReceipts });
       } else {
         if (!tripId) throw new Error("Missing tripId");
         
@@ -42,12 +61,13 @@ export function useExpenses(tripId?: string) {
           amount: expense.amount,
           description: expense.desc,
           category: expense.category || 'OTHER',
-          splits: expense.splits || {}
+          splits: expense.splits || {},
+          receipt_urls: uploadedReceipts
         }).select().single();
         
         if (error) throw error;
         if (data) {
-          addExpense({ ...expense, id: data.id });
+          addExpense({ ...expense, id: data.id, receipts: uploadedReceipts });
         }
       }
     } catch (error) {
