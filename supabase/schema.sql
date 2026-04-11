@@ -48,7 +48,6 @@ CREATE TABLE public.expenses (
   category expense_type DEFAULT 'other',
   splits JSONB DEFAULT '{}'::jsonb,
   receipt_urls TEXT[] DEFAULT '{}',
-  is_settled BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -111,5 +110,42 @@ ALTER TABLE public.trip_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+-- 10. RLS POLICIES (Expert Architecture Enforcements)
+-- Tầng bảo vệ kiên cố bằng DB-Level Filters, giúp frontend select('*') an toàn tuyệt đối.
+
+-- Users can read all users (to invite friends) but only update their own
+CREATE POLICY "Enable read access for all users" ON public.users FOR SELECT USING (true);
+CREATE POLICY "Users can edit their own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+
+-- Trips: Owner or members can Select, Update. Only Owner can Delete.
+CREATE POLICY "Users view trips they belong to" ON public.trips FOR SELECT USING (
+  owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid()))
+);
+CREATE POLICY "Users can insert trips" ON public.trips FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Members can update their trips" ON public.trips FOR UPDATE USING (
+  owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid()))
+);
+CREATE POLICY "Only trip owner can delete trip" ON public.trips FOR DELETE USING (owner_id = auth.uid());
+
+-- Expenses: Anyone in the trip can read/write expenses
+CREATE POLICY "Members can view expenses of their trips" ON public.expenses FOR SELECT USING (
+  trip_id IN (SELECT id FROM public.trips WHERE owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid())))
+);
+CREATE POLICY "Members can mutate expenses" ON public.expenses FOR ALL USING (
+  trip_id IN (SELECT id FROM public.trips WHERE owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid())))
+);
+
+-- Posts: Anyone in the trip can read/write posts
+CREATE POLICY "Members can view posts of their trips" ON public.posts FOR SELECT USING (
+  trip_id IN (SELECT id FROM public.trips WHERE owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid())))
+);
+CREATE POLICY "Members can mutate posts" ON public.posts FOR ALL USING (
+  trip_id IN (SELECT id FROM public.trips WHERE owner_id = auth.uid() OR members @> jsonb_build_array(jsonb_build_object('id', auth.uid())))
+);
+
+-- Notifications: Only the recipient can view/delete
+CREATE POLICY "Users view own notifications" ON public.notifications FOR ALL USING (user_id = auth.uid());
+
 
 -- Note: RLS policies (SELECT/INSERT/UPDATE) should be added later based on app logic requirements.
