@@ -63,12 +63,35 @@ CREATE TABLE public.posts (
   trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   expense_id UUID REFERENCES public.trip_expenses(id) ON DELETE SET NULL,
-  primary_photo_url TEXT NOT NULL,
-  secondary_photo_url TEXT, -- For locket style or receipts
-  caption TEXT,
+  content TEXT,
+  image_urls TEXT[] DEFAULT '{}',
+  is_dual_camera BOOLEAN DEFAULT false,
+  likes TEXT[] DEFAULT '{}',
+  comments JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- RPC Functions cho Posts
+CREATE OR REPLACE FUNCTION toggle_post_like(p_post_id UUID, p_user_id TEXT)
+RETURNS void AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND p_user_id = ANY(likes)) THEN
+    UPDATE public.posts SET likes = array_remove(likes, p_user_id) WHERE id = p_post_id;
+  ELSE
+    UPDATE public.posts SET likes = array_append(likes, p_user_id) WHERE id = p_post_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION add_post_comment(p_post_id UUID, p_comment JSONB)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.posts 
+  SET comments = comments || jsonb_build_array(p_comment) 
+  WHERE id = p_post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. Notifications Table
 CREATE TABLE public.notifications (

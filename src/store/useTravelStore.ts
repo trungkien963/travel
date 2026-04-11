@@ -265,8 +265,8 @@ export const useTravelStore = create<TravelState>()(
               isDual: p.is_dual_camera || false,
               timestamp: p.created_at || new Date().toISOString(),
               date: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-              likes: p.likes || 0,
-              hasLiked: false,
+              likes: Array.isArray(p.likes) ? p.likes.length : 0,
+              hasLiked: Array.isArray(p.likes) ? p.likes.includes(get().currentUserId) : false,
               comments: p.comments && Array.isArray(p.comments) ? p.comments : []
             }));
           }

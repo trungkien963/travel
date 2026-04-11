@@ -16,14 +16,20 @@ export function useSocial(tripId?: string) {
   const toggleLike = async (postId: string) => {
     const p = allPosts.find(x => x.id === postId);
     if (!p) return;
-    const { setGlobalLoading } = useTravelStore.getState();
+    const { setGlobalLoading, currentUserId } = useTravelStore.getState();
     setGlobalLoading(true);
     try {
-      const newLikes = p.hasLiked ? p.likes - 1 : p.likes + 1;
-      const { error } = await supabase.from('posts').update({ likes: newLikes }).eq('id', postId);
-      if (error) throw error;
-      updateStorePost(postId, { hasLiked: !p.hasLiked, likes: newLikes });
+      // Optimistic update
+      const newHasLiked = !p.hasLiked;
+      const newLikesCount = newHasLiked ? p.likes + 1 : p.likes - 1;
+      updateStorePost(postId, { hasLiked: newHasLiked, likes: newLikesCount });
 
+      const { error } = await supabase.rpc('toggle_post_like', { p_post_id: postId, p_user_id: currentUserId });
+      if (error) {
+        // Revert on error
+        updateStorePost(postId, { hasLiked: p.hasLiked, likes: p.likes });
+        throw error;
+      }
     } catch (e) {
       Alert.alert('Error', 'Failed to toggle like.');
     } finally {
@@ -50,15 +56,22 @@ export function useSocial(tripId?: string) {
       text: text,
       timestamp: new Date().toISOString()
     };
+    
+    // Optimistic UI update
     const newCommentsList = [...p.comments, newComment];
+    updateStorePost(postId, { comments: newCommentsList });
 
     setGlobalLoading(true);
     try {
-      const { error } = await supabase.from('posts').update({ comments: newCommentsList }).eq('id', postId);
+      // Use RPC for atomic array append
+      const { error } = await supabase.rpc('add_post_comment', { 
+        p_post_id: postId, 
+        p_comment: newComment 
+      });
       if (error) throw error;
-      updateStorePost(postId, { comments: newCommentsList });
-
     } catch (e) {
+      // Revert optimism if failed
+      updateStorePost(postId, { comments: p.comments });
       Alert.alert('Error', 'Failed to add comment.');
     } finally {
       setGlobalLoading(false);
@@ -91,7 +104,7 @@ export function useSocial(tripId?: string) {
         image_urls: uploadedImages,
         is_dual_camera: isDual || false,
         comments: [],
-        likes: 0
+        likes: []
       }).select().single();
 
       if (error) throw error;
