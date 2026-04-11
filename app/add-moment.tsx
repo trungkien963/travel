@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert, Image, SafeAreaView, ScrollView, Modal } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -19,6 +19,7 @@ const formatCurrency = (val: string) => {
 
 export default function AddMomentScreen() {
   const router = useRouter();
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   
   // Content & Modes
   const [content, setContent] = useState('');

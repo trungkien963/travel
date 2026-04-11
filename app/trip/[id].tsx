@@ -244,7 +244,9 @@ export default function TripDetailsScreen() {
          csvContent += `"${d.fromName}","${d.toName}",${d.amount}\n`;
        });
 
+       // @ts-ignore
        const fileUri = FileSystem.documentDirectory + 'TripReport.csv';
+       // @ts-ignore
        await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
        await Sharing.shareAsync(fileUri);
     } catch (err) {

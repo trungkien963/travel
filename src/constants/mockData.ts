@@ -9,4 +9,4 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [];
 
 export const MOCK_TRIPS = [];
 
-export const MOCK_FRIENDS = [];
+export const MOCK_FRIENDS: any[] = [];

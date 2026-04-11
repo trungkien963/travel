@@ -46,7 +46,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      initSupabase();
     }
   }, [loaded]);
   
@@ -74,21 +73,29 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const isPublicGroup = segments.length === 0 || segments[0] === 'auth' || segments[0] === 'index';
+      const segs = segments as any[];
+      const isPublicGroup = segs.length === 0 || segs[0] === 'auth' || segs[0] === 'index';
       if (!session && !isPublicGroup) {
         router.replace('/');
       } else if (session && isPublicGroup) {
+        useTravelStore.getState().initSupabase();
         router.replace('/(tabs)/discover');
+      } else if (session) {
+        useTravelStore.getState().initSupabase();
       }
     });
 
     // Listen for auth changes (Login & Logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const isPublicGroup = segments.length === 0 || segments[0] === 'auth' || segments[0] === 'index';
+      const segs = segments as any[];
+      const isPublicGroup = segs.length === 0 || segs[0] === 'auth' || segs[0] === 'index';
       if (!session && !isPublicGroup) {
         router.replace('/');
       } else if (session && isPublicGroup) {
+        useTravelStore.getState().initSupabase();
         router.replace('/(tabs)/discover');
+      } else if (session) {
+        useTravelStore.getState().initSupabase();
       }
     });
 

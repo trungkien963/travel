@@ -113,13 +113,24 @@ export const useTravelStore = create<TravelState>()(
                  avatar: meta?.avatar_url || meta?.picture || undefined
                }
              });
+             
+             // CRITICAL: Upsert to public.users to satisfy trips_owner_id_fkey foreign key
+             try {
+               await supabase.from('users').upsert({
+                 id: authData.user.id,
+                 email: authData.user.email,
+                 full_name: meta?.full_name || meta?.name || authData.user.email?.split('@')[0],
+                 avatar_url: meta?.avatar_url || meta?.picture || null
+               }, { onConflict: 'id' });
+             } catch (err) {
+               console.log("Failed to sync auth.user to public.users", err);
+             }
           }
 
-          const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*, trip_members(user_id, role)');
+          const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*');
           if (!tripsError && tripsData && tripsData.length > 0) {
             // Transform snake_case from DB back to camelCase for UI
             const formattedTrips = tripsData.map(t => {
-              const adminMember = t.trip_members?.find((m: any) => m.role === 'admin');
               return {
                 id: t.id,
                 title: t.title,
@@ -128,7 +139,7 @@ export const useTravelStore = create<TravelState>()(
                 coverImage: t.cover_image,
                 startDate: t.start_date,
                 endDate: t.end_date,
-                ownerId: adminMember?.user_id || get().currentUserId, // Use proper owner or fallback to current
+                ownerId: t.owner_id || get().currentUserId,
                 isPrivate: t.is_private,
                 members: MOCK_MEMBERS, // Temporarily still use mock members
               };
@@ -150,10 +161,9 @@ export const useTravelStore = create<TravelState>()(
 
       refreshData: async () => {
         try {
-          const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*, trip_members(user_id, role)').order('created_at', { ascending: false });
+          const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
           if (!tripsError && tripsData) {
             const formattedTrips = tripsData.map(t => {
-              const adminMember = t.trip_members?.find((m: any) => m.role === 'admin');
               return {
                 id: t.id,
                 title: t.title,
@@ -162,26 +172,70 @@ export const useTravelStore = create<TravelState>()(
                 coverImage: t.cover_image,
                 startDate: t.start_date,
                 endDate: t.end_date,
-                ownerId: adminMember?.user_id || get().currentUserId,
+                ownerId: t.owner_id || get().currentUserId,
                 isPrivate: t.is_private,
-                members: MOCK_MEMBERS, // Still use mock for now
+                members: t.members && Array.isArray(t.members) && t.members.length > 0 ? t.members : MOCK_MEMBERS, // Now reads from DB JSONB
               };
             });
             
-            set((state) => {
-              // Keep local unsynced trips (assuming they start with 't')
-              const localUnsyncedTrips = state.trips.filter(t => t.id && String(t.id).startsWith('t'));
-              
-              // To prevent duplicate UI representation for the machine that creates it,
-              // we probably should just do a naive replace if we don't care, but let's 
-              // keep local trips that don't match title to avoid immediate duplicate visually?
-              // Actually, simplest is to just overwrite with cloud + local unsynced 
-              // that don't match any cloud title (basic heuristic).
-              const cloudTitles = new Set(formattedTrips.map(ct => ct.title));
-              const uniqueLocalUnsynced = localUnsyncedTrips.filter(t => !cloudTitles.has(t.title));
+            const { data: postsData, error: postsError } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+          let formattedPosts = [] as any[];
+          
+          if (!postsError && postsData) {
+            formattedPosts = postsData.map(p => ({
+              id: p.id,
+              tripId: p.trip_id,
+              authorId: p.user_id,
+              authorName: 'Traveler', // Replaces with MOCK_MEMBERS or user DB details in useSocial if needed, for now just placeholder to not crash UI
+              authorAvatar: undefined,
+              content: p.content || '',
+              images: p.image_urls || [],
+              isDual: p.is_dual_camera || false,
+              timestamp: p.created_at || new Date().toISOString(),
+              date: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              likes: p.likes || 0,
+              hasLiked: false,
+              comments: p.comments && Array.isArray(p.comments) ? p.comments : []
+            }));
+          }
 
-              return { trips: [...formattedTrips, ...uniqueLocalUnsynced] };
-            });
+          // Fetch Expenses
+          const { data: expensesData, error: expensesError } = await supabase.from('expenses').select('*');
+          let formattedExpenses = [] as any[];
+          if (!expensesError && expensesData) {
+            formattedExpenses = expensesData.map(e => ({
+              id: e.id,
+              tripId: e.trip_id,
+              amount: e.amount,
+              desc: e.description || '',
+              date: e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              payerId: e.payer_id || 'Traveler',
+              category: e.category || 'OTHER',
+              splits: e.splits || {} // Now reads from DB JSONB
+            }));
+          }
+
+          set((state) => {
+            // Trips
+            const localUnsyncedTrips = state.trips.filter(t => t.id && String(t.id).startsWith('t'));
+            const cloudTripTitles = new Set(formattedTrips.map(ct => ct.title));
+            const uniqueLocalTrips = localUnsyncedTrips.filter(t => !cloudTripTitles.has(t.title));
+            
+            // Posts
+            const localUnsyncedPosts = state.posts.filter(p => p.id && String(p.id).startsWith('p'));
+            const cloudPostContent = new Set(formattedPosts.map(cp => cp.content));
+            const uniqueLocalPosts = localUnsyncedPosts.filter(p => !cloudPostContent.has(p.content));
+            
+            const localUnsyncedExpenses = state.expenses.filter(e => e.id && String(e.id).startsWith('e'));
+            const cloudExpenseDescs = new Set(formattedExpenses.map(ce => ce.desc));
+            const uniqueLocalExpenses = localUnsyncedExpenses.filter(e => !cloudExpenseDescs.has(e.desc));
+
+            return { 
+               trips: [...formattedTrips, ...uniqueLocalTrips],
+               posts: [...formattedPosts, ...uniqueLocalPosts],
+               expenses: [...formattedExpenses, ...uniqueLocalExpenses]
+            };
+          });
           }
         } catch (err) {
           console.error("Refresh failed", err);
@@ -189,7 +243,7 @@ export const useTravelStore = create<TravelState>()(
       },
 
       pushTripToCloud: async (trip) => {
-         try {
+          try {
            const { data, error } = await supabase.from('trips').insert({
              title: trip.title,
              cover_image: trip.coverImage,
@@ -197,21 +251,13 @@ export const useTravelStore = create<TravelState>()(
              location_city: trip.locationCity || null,
              start_date: trip.startDate,
              end_date: trip.endDate,
-             is_private: trip.isPrivate
+             is_private: trip.isPrivate,
+             owner_id: trip.ownerId || get().currentUserId || null
            }).select().single();
            
            if (error) {
              console.log("Failed to push trip details", error);
              return;
-           }
-
-           // Link the current user as the admin logic
-           if (get().currentUserId) {
-             await supabase.from('trip_members').insert({
-               trip_id: data.id,
-               user_id: get().currentUserId,
-               role: 'admin'
-             });
            }
            
            // CRITICAL: Update the local temporary ID with the real Cloud UUID!

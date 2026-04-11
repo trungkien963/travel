@@ -12,10 +12,15 @@ export function useSocial(tripId?: string) {
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [allPosts, tripId]);
 
-  const toggleLike = (postId: string) => {
+  const toggleLike = async (postId: string) => {
     const p = allPosts.find(x => x.id === postId);
     if (!p) return;
-    updateStorePost(postId, { hasLiked: !p.hasLiked, likes: p.hasLiked ? p.likes - 1 : p.likes + 1 });
+    const newLikes = p.hasLiked ? p.likes - 1 : p.likes + 1;
+    updateStorePost(postId, { hasLiked: !p.hasLiked, likes: newLikes });
+    
+    if (!postId.startsWith('p')) {
+      await supabase.from('posts').update({ likes: newLikes }).eq('id', postId);
+    }
   };
 
   const addComment = (postId: string, text: string) => {
@@ -37,7 +42,13 @@ export function useSocial(tripId?: string) {
       text: text,
       timestamp: new Date().toISOString()
     };
-    updateStorePost(postId, { comments: [...p.comments, newComment] });
+    
+    const newCommentsList = [...p.comments, newComment];
+    updateStorePost(postId, { comments: newCommentsList });
+    
+    if (!postId.startsWith('p')) {
+      supabase.from('posts').update({ comments: newCommentsList }).eq('id', postId).then();
+    }
   };
 
   const addPost = async (content: string, images: string[], authorId: string, authorName: string, targetTripId?: string, isDual?: boolean) => {
@@ -83,22 +94,36 @@ export function useSocial(tripId?: string) {
     
     // 3. (Optional) Sync to Supabase DB if user is logged in
     const { currentUserId } = useTravelStore.getState();
-    if (currentUserId) {
-       supabase.from('posts').insert([{
-         id: newPost.id.replace('p', ''), // Supabase wants UUID, maybe generate one? Or let DB generate it. 
-         // For now, doing it offline first is fine, but here's the API call.
-       }]).then(({ error }) => {
-         if (error) console.log("Post sync warning:", error.message);
+    if (currentUserId && newPost.tripId && !newPost.tripId.startsWith('t')) {
+       supabase.from('posts').insert({
+         trip_id: newPost.tripId,
+         user_id: currentUserId,
+         content: content,
+         image_urls: uploadedImages,
+         is_dual_camera: isDual || false,
+         comments: []
+       }).select().single().then(({ data, error }) => {
+         if (error) {
+           console.log("Post sync warning:", error.message);
+         } else if (data) {
+           useTravelStore.getState().updatePost(newPost.id, { id: data.id });
+         }
        });
     }
   };
 
-  const deletePost = (postId: string) => {
+  const deletePost = async (postId: string) => {
     deleteStorePost(postId);
+    if (!postId.startsWith('p')) {
+      await supabase.from('posts').delete().eq('id', postId);
+    }
   };
 
-  const editPost = (postId: string, content: string, images: string[]) => {
+  const editPost = async (postId: string, content: string, images: string[]) => {
     updateStorePost(postId, { content, images });
+    if (!postId.startsWith('p')) {
+      await supabase.from('posts').update({ content: content, images: images }).eq('id', postId);
+    }
   };
 
   return { posts, toggleLike, addComment, addPost, deletePost, editPost };

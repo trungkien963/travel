@@ -4,14 +4,14 @@ import { storage } from '../lib/supabase'
 
 const zustandStorage: StateStorage = {
   setItem: (name, value) => {
-    return storage.set(name, value)
+    return storage.setItem(name, value) as any
   },
-  getItem: (name) => {
-    const value = storage.getString(name)
+  getItem: async (name) => {
+    const value = await storage.getItem(name)
     return value ?? null
   },
   removeItem: (name) => {
-    return storage.delete(name)
+    return storage.removeItem(name) as any
   },
 }
 

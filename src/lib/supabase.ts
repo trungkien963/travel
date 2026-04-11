@@ -4,7 +4,7 @@ import { AppState, Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import * as FileSystem from 'expo-file-system';
 
-const supabaseStorage = {
+export const storage = {
   setItem: async (key: string, value: string) => {
     try {
       await SecureStore.setItemAsync(key, value)
@@ -29,7 +29,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: supabaseStorage,
+    storage: storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

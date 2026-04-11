@@ -1,0 +1,27 @@
+app/_layout.tsx(76,29): error TS2367: This comparison appears to be unintentional because the types '2 | 1' and '0' have no overlap.
+app/_layout.tsx(76,80): error TS2367: This comparison appears to be unintentional because the types '"trips" | "notifications" | "add-moment" | "modal" | "_sitemap" | "(tabs)" | "capture" | "discover" | "discover_alt" | "favorites" | "profile" | "+not-found" | "trip"' and '"index"' have no overlap.
+app/_layout.tsx(89,29): error TS2367: This comparison appears to be unintentional because the types '2 | 1' and '0' have no overlap.
+app/_layout.tsx(89,80): error TS2367: This comparison appears to be unintentional because the types '"trips" | "notifications" | "add-moment" | "modal" | "_sitemap" | "(tabs)" | "capture" | "discover" | "discover_alt" | "favorites" | "profile" | "+not-found" | "trip"' and '"index"' have no overlap.
+app/add-moment.tsx(34,48): error TS2304: Cannot find name 'tripId'.
+app/add-moment.tsx(45,71): error TS2304: Cannot find name 'tripId'.
+app/add-moment.tsx(193,74): error TS2339: Property 'avatar' does not exist on type 'Member'.
+app/trip/[id].tsx(247,35): error TS2339: Property 'documentDirectory' does not exist on type 'typeof import("/Users/edric/Documents/Amaris/Project/travel/node_modules/expo-file-system/build/index")'.
+app/trip/[id].tsx(248,88): error TS2339: Property 'EncodingType' does not exist on type 'typeof import("/Users/edric/Documents/Amaris/Project/travel/node_modules/expo-file-system/build/index")'.
+src/components/ExpenseLogModal.tsx(28,16): error TS2304: Cannot find name 'Member'.
+src/components/ExpenseLogModal.tsx(180,25): error TS2339: Property 'customSplitInput' does not exist on type '{ iconCircle: { width: number; height: number; borderRadius: number; backgroundColor: string; justifyContent: "center"; alignItems: "center"; }; pipContainer: { position: "absolute"; width: number; ... 8 more ...; shadowRadius: number; }; ... 14 more ...; splitUserAmount: { ...; }; }'.
+src/components/MemberModal.tsx(54,8): error TS2339: Property 'name' does not exist on type 'never'.
+src/components/MemberModal.tsx(54,61): error TS2339: Property 'username' does not exist on type 'never'.
+src/components/MemberModal.tsx(81,28): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/MemberModal.tsx(84,33): error TS2339: Property 'name' does not exist on type 'never'.
+src/components/MemberModal.tsx(85,34): error TS2339: Property 'username' does not exist on type 'never'.
+src/components/MemberModal.tsx(90,64): error TS2339: Property 'name' does not exist on type 'never'.
+src/components/MemberModal.tsx(91,68): error TS2339: Property 'username' does not exist on type 'never'.
+src/components/TripFormModal.tsx(77,5): error TS2552: Cannot find name 'Alert'. Did you mean 'alert'?
+src/components/TripFormModal.tsx(85,47): error TS2552: Cannot find name 'Alert'. Did you mean 'alert'?
+src/components/TripFormModal.tsx(123,10): error TS2552: Cannot find name 'Alert'. Did you mean 'alert'?
+src/hooks/useExpenses.ts(18,15): error TS2304: Cannot find name 'supabase'.
+src/hooks/useExpenses.ts(29,39): error TS2304: Cannot find name 'supabase'.
+src/hooks/useExpenses.ts(50,13): error TS2304: Cannot find name 'supabase'.
+src/hooks/useSocial.ts(35,75): error TS2339: Property 'avatar' does not exist on type 'Member'.
+src/hooks/useSocial.ts(74,68): error TS2339: Property 'avatar' does not exist on type 'Member'.
+src/store/index.ts(3,10): error TS2305: Module '"../lib/supabase"' has no exported member 'storage'.

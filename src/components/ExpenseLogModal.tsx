@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, Tex
 import { X, Image as ImageIcon, Camera as CameraIcon, CheckCircle2, Circle, RefreshCcw, Zap, Coffee, Car, Home, Ticket, ShoppingBag, Folder, Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Expense, SplitType, ExpenseCategory, CATEGORY_COLORS } from '../types/expense';
+import { Expense, SplitType, ExpenseCategory, CATEGORY_COLORS, Member } from '../types/expense';
 
 
 export const getCategoryIcon = (category?: string, size = 20, color = "#FFF") => {
@@ -383,4 +383,5 @@ const styles = StyleSheet.create({
   checkCircleInactive: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: '#F0F0F0' },
   splitUserName: { fontSize: 15, fontWeight: '800', color: '#1C1917' },
   splitUserAmount: { fontSize: 16, fontWeight: '900', color: '#FFC800', textAlign: 'right' },
+  customSplitInput: { fontSize: 13, fontWeight: '800', color: '#1C1917', minWidth: 40, textAlign: 'right' }
 });
