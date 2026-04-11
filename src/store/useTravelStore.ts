@@ -5,6 +5,7 @@ import { Post } from '../types/social';
 import { AppNotification } from '../types/notification';
 
 import { supabase } from '../lib/supabase';
+import * as Notifications from 'expo-notifications';
 
 interface TravelState {
   currentUserId: string;
@@ -86,9 +87,11 @@ export const useTravelStore = create<TravelState>()(
       
       addNotification: (notification) => set((state) => ({ notifications: [notification, ...state.notifications] })),
       markNotificationAsRead: async (id) => {
-        set((state) => ({
-          notifications: state.notifications.map(n => n.id === id ? { ...n, isRead: true } : n)
-        }));
+        set((state) => {
+          const newList = state.notifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+          Notifications.setBadgeCountAsync(newList.filter(n => !n.isRead).length);
+          return { notifications: newList };
+        });
         try {
           await supabase.from('notifications').update({ is_read: true }).eq('id', id);
         } catch (err) {
@@ -120,6 +123,7 @@ export const useTravelStore = create<TravelState>()(
                 createdAt: n.created_at,
                 isRead: n.is_read
               }));
+              Notifications.setBadgeCountAsync(formattedList.filter((n: any) => !n.isRead).length);
               set({ notifications: formattedList });
             }
           });
@@ -148,7 +152,11 @@ export const useTravelStore = create<TravelState>()(
                 createdAt: newNotif.created_at,
                 isRead: newNotif.is_read
               };
-              set((state) => ({ notifications: [formattedNotif, ...state.notifications] }));
+              set((state) => {
+                const newList = [formattedNotif, ...state.notifications];
+                Notifications.setBadgeCountAsync(newList.filter(n => !n.isRead).length);
+                return { notifications: newList };
+              });
             }
           )
           .subscribe();

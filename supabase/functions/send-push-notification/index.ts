@@ -5,7 +5,7 @@ serve(async (req) => {
   try {
     const payload = await req.json()
     // payload.record chứa dòng thông báo vừa mới chui vào DB
-    const { user_id, message, actor_name, type } = payload.record
+    const { user_id, message, actor_name, type, trip_id } = payload.record
 
     if (!user_id) return new Response("No user_id provided", { status: 200 })
 
@@ -45,7 +45,8 @@ serve(async (req) => {
         to: user.expo_push_token,
         sound: 'default',
         title: title,
-        body: `${actor_name} ${message}`
+        body: `${actor_name} ${message}`,
+        data: { tripId: trip_id }
       }),
     })
 

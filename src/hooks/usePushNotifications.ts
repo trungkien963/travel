@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,6 +17,7 @@ export function usePushNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const notificationListener = useRef<any>();
   const responseListener = useRef<any>();
+  const router = useRouter();
 
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
@@ -25,9 +27,16 @@ export function usePushNotifications() {
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      // Handle Tap Action (e.g., Navigate to specific screen)
+      // Handle Tap Action (Navigate to specific screen)
       const data = response.notification.request.content.data;
       console.log('Push Notif Tapped! Data:', data);
+      
+      if (data && data.tripId) {
+        // Add a delay to let the app finish mounting if it was completely closed
+        setTimeout(() => {
+          router.push(`/trip/${data.tripId}` as any);
+        }, 1500);
+      }
     });
 
     return () => {

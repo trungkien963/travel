@@ -28,6 +28,20 @@ export default function NotificationsScreen() {
     }
   };
 
+  const handleAcceptInvite = (item: AppNotification) => {
+    markNotificationAsRead(item.id);
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/discover');
+    setTimeout(() => {
+      router.push(`/trip/${item.tripId}` as any);
+    }, 200);
+  };
+
+  const handleDeclineInvite = (item: AppNotification) => {
+    markNotificationAsRead(item.id);
+    // Ideally we would trigger an API call to remove them from the trip members list
+  };
+
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -87,10 +101,16 @@ export default function NotificationsScreen() {
           
           {item.type === 'TRIP_INVITE' && !item.isRead && (
              <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.primaryActionBtn}>
+                <TouchableOpacity 
+                   style={styles.primaryActionBtn}
+                   onPress={() => handleAcceptInvite(item)}
+                >
                   <Text style={styles.primaryActionText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryActionBtn}>
+                <TouchableOpacity 
+                   style={styles.secondaryActionBtn}
+                   onPress={() => handleDeclineInvite(item)}
+                >
                   <Text style={styles.secondaryActionText}>Decline</Text>
                 </TouchableOpacity>
              </View>

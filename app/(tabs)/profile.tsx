@@ -25,6 +25,13 @@ export default function ProfileScreen() {
   }, []);
 
   const handleSignOut = async () => {
+    if (user && user.id) {
+      try {
+        await supabase.from('users').update({ expo_push_token: null }).eq('id', user.id);
+      } catch (err) {
+        console.error("Failed to clear push token", err);
+      }
+    }
     await supabase.auth.signOut();
     router.replace('/');
   };
