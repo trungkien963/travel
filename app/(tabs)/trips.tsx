@@ -534,7 +534,7 @@ export default function MyTripsScreen() {
 
                        const newTripId = 't' + Date.now().toString();
                        const ownerMember = {
-                         id: currentUser?.id || 'm1',
+                         id: currentUser?.id || useTravelStore.getState().currentUserId,
                          name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Me',
                          email: currentUser?.email,
                          isMe: true,

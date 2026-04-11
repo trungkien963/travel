@@ -23,21 +23,26 @@ export default function AddMomentScreen() {
   // Content & Modes
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [isExpenseMode, setIsExpenseMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Location feature
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
   const { query, setQuery, results, isSearching } = useLocationSearch();
   
+  const { trips, addExpense, addPost, currentUserId, currentUserProfile } = useTravelStore();
+  
+  const currentTrip = trips.find(t => t.id === tripId);
+  const tripMembers = currentTrip?.members || MOCK_MEMBERS;
+  
   // Expense States
+  const [isExpenseMode, setIsExpenseMode] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState('');
-  const [paidBy, setPaidBy] = useState('m1'); 
+  const [paidBy, setPaidBy] = useState(currentUserId || tripMembers[0]?.id); 
   const [splitType, setSplitType] = useState<SplitType>('EQUALLY');
   const [includedMembers, setIncludedMembers] = useState<Record<string, boolean>>({});
   
   // Trip Selection Logic
-  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(tripId || null);
   const [showTripSelector, setShowTripSelector] = useState(false);
 
   // Camera States
@@ -53,36 +58,33 @@ export default function AddMomentScreen() {
   const cameraRef = useRef<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const { trips, addExpense, addPost, currentUserId, currentUserProfile } = useTravelStore();
-
   useEffect(() => {
     if (!cameraPermission?.granted) {
       requestCameraPermission();
     }
     // Initialize included members for expenses
-    setIncludedMembers(Object.fromEntries(MOCK_MEMBERS.map(m => [m.id, true])));
+    setIncludedMembers(Object.fromEntries(tripMembers.map(m => [m.id, true])));
     
     // Auto-select trip (Current Date logic)
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayDate = new Date(todayStr);
-    
-    // 1. Find ongoing
-    const ongoingTrip = trips.find(t => t.startDate <= todayStr && t.endDate >= todayStr);
-    if (ongoingTrip) {
-      setSelectedTripId(ongoingTrip.id);
-    } else if (trips.length > 0) {
-      // 2. Find closest
-      let closestId = trips[0]?.id;
-      let minDiff = Infinity;
-      trips.forEach(t => {
-         const tDate = new Date(t.startDate);
-         const diff = Math.abs(todayDate.getTime() - tDate.getTime());
-         if (diff < minDiff) {
-            minDiff = diff;
-            closestId = t.id;
-         }
-      });
-      if (closestId) setSelectedTripId(closestId);
+    if (!selectedTripId) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayDate = new Date(todayStr);
+      const ongoingTrip = trips.find(t => t.startDate <= todayStr && t.endDate >= todayStr);
+      if (ongoingTrip) {
+        setSelectedTripId(ongoingTrip.id);
+      } else if (trips.length > 0) {
+        let closestId = trips[0]?.id;
+        let minDiff = Infinity;
+        trips.forEach(t => {
+           const tDate = new Date(t.startDate);
+           const diff = Math.abs(todayDate.getTime() - tDate.getTime());
+           if (diff < minDiff) {
+              minDiff = diff;
+              closestId = t.id;
+           }
+        });
+        if (closestId) setSelectedTripId(closestId);
+      }
     }
   }, [cameraPermission, trips]);
 
@@ -106,7 +108,7 @@ export default function AddMomentScreen() {
         const photo1 = await cameraRef.current.takePictureAsync({ quality: 0.8 });
         setIsFlipping(true);
         setFacing(current => (current === 'back' ? 'front' : 'back'));
-        await new Promise(r => setTimeout(r, 800)); // Increase wait for slower Android hardware
+        await new Promise(r => setTimeout(r, 800));
         const photo2 = await cameraRef.current.takePictureAsync({ quality: 0.8 });
         setIsFlipping(false);
         if (isAddingMore) {
@@ -159,7 +161,6 @@ export default function AddMomentScreen() {
     
     setIsSubmitting(true);
     
-    // Simulate delicate network loading (API call)
     await new Promise(resolve => setTimeout(resolve, 800));
 
     if (isExpenseMode) {
@@ -173,12 +174,11 @@ export default function AddMomentScreen() {
         tripId: selectedTripId,
         desc: content || 'Untitled Expense',
         amount: parseInt(expenseAmount.replace(/,/g, ''), 10) || 0,
-        payerId: currentUserId || 'm1',
+        payerId: paidBy || currentUserId || 'm1',
         date: new Date().toISOString().split('T')[0],
         category: 'OTHER',
         splits: {}
       });
-      // Redirect to trip detail with Expenses Tab opened
       router.replace({ pathname: '/trip/[id]', params: { id: selectedTripId, tab: 'EXPENSES' } });
     } else {
       if (!content && images.length === 0) {

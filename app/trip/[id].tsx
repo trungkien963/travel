@@ -110,7 +110,7 @@ export default function TripDetailsScreen() {
       const userMember = trip?.members.find(m => m.id === currentUserId);
       const postAuthorName = useTravelStore.getState().currentUserProfile?.name || userMember?.name || 'You';
       
-      addPost(content, images, currentUserId || 'm1', postAuthorName, id as string, isDual);
+      addPost(content, images, currentUserId, postAuthorName, id as string, isDual);
     }
 
     if (expenseData) {
@@ -501,8 +501,8 @@ export default function TripDetailsScreen() {
                ) : (
                  <View style={{ gap: 16, marginBottom: 20 }}>
                    {debts.map((debt, idx) => {
-                     const isMeFrom = debt.fromId === 'm1';
-                     const isMeTo = debt.toId === 'm1';
+                     const isMeFrom = debt.fromId === currentUserId;
+                     const isMeTo = debt.toId === currentUserId;
                      
                      return (
                        <View key={idx} style={styles.expenseItemCard}>
@@ -623,9 +623,13 @@ export default function TripDetailsScreen() {
                           { 
                             text: 'Delete', 
                             style: 'destructive', 
-                            onPress: () => {
-                              useTravelStore.getState().deleteTrip(id as string);
-                              router.replace('/(tabs)/trips');
+                            onPress: async () => {
+                              try {
+                                await useTravelStore.getState().deleteTrip(id as string);
+                                router.replace('/(tabs)/trips');
+                              } catch (e: any) {
+                                Alert.alert("Oops!", e.message || "Failed to delete the trip.");
+                              }
                             }
                           }
                         ]

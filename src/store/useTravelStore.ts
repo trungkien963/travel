@@ -21,7 +21,7 @@ interface TravelState {
   setTrips: (trips: Trip[]) => void;
   addTrip: (trip: Trip) => void;
   updateTrip: (id: string, updatedData: Partial<Trip>) => void;
-  deleteTrip: (id: string) => void;
+  deleteTrip: (id: string) => Promise<void>;
   
   addExpense: (expense: Expense) => void;
   updateExpense: (id: string, updatedData: Partial<Expense>) => void;
@@ -60,16 +60,22 @@ export const useTravelStore = create<TravelState>()(
       updateTrip: (id, data) => set((state) => ({
         trips: state.trips.map(t => t.id === id ? { ...t, ...data } : t)
       })),
-      deleteTrip: (id) => {
+      deleteTrip: async (id) => {
+        // If it's a cloud trip (not starting with 't'), attempt to delete from Cloud first
+        if (id && !String(id).startsWith('t')) {
+          const { error } = await supabase.from('trips').delete().eq('id', id);
+          if (error) {
+             console.error("Failed to delete from supabase:", error);
+             throw new Error("Unable to delete trip from cloud. Check your permissions.");
+          }
+        }
+        
+        // If cloud delete succeeds, or it was a local unsynced trip, remove locally
         set((state) => ({
           trips: state.trips.filter(t => t.id !== id),
           expenses: state.expenses.filter(e => e.tripId !== id),
           posts: state.posts.filter(p => p.tripId !== id)
         }));
-        // Supabase Sync (Silent push)
-        supabase.from('trips').delete().eq('id', id).then(({error}) => {
-          if (error) console.log("Failed to delete from supabase:", error);
-        });
       },
 
       addExpense: (expense) => set((state) => ({ expenses: [expense, ...state.expenses] })),
@@ -207,6 +213,14 @@ export const useTravelStore = create<TravelState>()(
                role: 'admin'
              });
            }
+           
+           // CRITICAL: Update the local temporary ID with the real Cloud UUID!
+           set((state) => ({
+             trips: state.trips.map(t => t.id === trip.id ? { ...t, id: data.id } : t),
+             expenses: state.expenses.map(e => e.tripId === trip.id ? { ...e, tripId: data.id } : e),
+             posts: state.posts.map(p => p.tripId === trip.id ? { ...p, tripId: data.id } : p)
+           }));
+           
          } catch(err) {
            console.log("Failed to push to cloud", err);
          }
