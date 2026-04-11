@@ -38,26 +38,18 @@ CREATE TABLE public.trip_members (
   PRIMARY KEY (trip_id, user_id)
 );
 
--- 5. Trip Expenses
-CREATE TABLE public.trip_expenses (
+-- 5. Expenses
+CREATE TABLE public.expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
   payer_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   amount DECIMAL(12, 2) NOT NULL,
   description TEXT NOT NULL,
   category expense_type DEFAULT 'other',
+  splits JSONB DEFAULT '{}'::jsonb,
   is_settled BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 6. Expense Splits
-CREATE TABLE public.expense_splits (
-  expense_id UUID REFERENCES public.trip_expenses(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  amount_owed DECIMAL(12, 2) NOT NULL,
-  is_paid BOOLEAN DEFAULT false,
-  PRIMARY KEY (expense_id, user_id)
 );
 
 -- 7. Posts (Moments)
@@ -65,7 +57,7 @@ CREATE TABLE public.posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  expense_id UUID REFERENCES public.trip_expenses(id) ON DELETE SET NULL,
+  expense_id UUID REFERENCES public.expenses(id) ON DELETE SET NULL,
   content TEXT,
   image_urls TEXT[] DEFAULT '{}',
   is_dual_camera BOOLEAN DEFAULT false,
@@ -115,8 +107,7 @@ CREATE TABLE public.notifications (
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trip_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trip_expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expense_splits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
