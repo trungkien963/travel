@@ -4,7 +4,7 @@ import { X, Image as ImageIcon, Camera as CameraIcon, CheckCircle2, Circle, Refr
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Expense, SplitType, ExpenseCategory, CATEGORY_COLORS } from '../types/expense';
-import { MOCK_MEMBERS } from '../constants/mockData';
+
 
 export const getCategoryIcon = (category?: string, size = 20, color = "#FFF") => {
   switch (category) {

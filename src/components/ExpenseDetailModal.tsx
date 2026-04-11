@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, Dimensions, Alert } from 'react-native';
 import { X, Trash2 } from 'lucide-react-native';
-import { Expense } from '../types/expense';
-import { MOCK_MEMBERS } from '../constants/mockData';
+import { Expense, Member } from '../types/expense';
 
 const { height } = Dimensions.get('window');
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Expense } from '../types/expense';
-import { MOCK_MEMBERS } from '../constants/mockData';
+import { Member } from '../types/expense'; // Assuming Member is here or might be needed as type
+
 
 export interface Debt {
   fromId: string;

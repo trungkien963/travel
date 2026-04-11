@@ -5,7 +5,7 @@ import { Trip } from '../types/trip';
 import { Expense } from '../types/expense';
 import { Post } from '../types/social';
 import { AppNotification } from '../types/notification';
-import { MOCK_TRIPS, MOCK_NOTIFICATIONS, MOCK_MEMBERS } from '../constants/mockData';
+import { MOCK_MEMBERS } from '../constants/mockData';
 import { supabase } from '../lib/supabase';
 
 interface TravelState {
@@ -159,7 +159,7 @@ export const useTravelStore = create<TravelState>()(
       }
     }),
     {
-      name: 'travel-storage',
+      name: 'travel-storage-v2',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppNotification } from '../src/types/notification';
-import { MOCK_NOTIFICATIONS } from '../src/constants/mockData';
+import { useTravelStore } from '../src/store/useTravelStore';
 import { ChevronLeft, MapPin, DollarSign, MessageCircle, Heart, Plane, Bell } from 'lucide-react-native';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { notifications } = useTravelStore();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -101,7 +102,7 @@ export default function NotificationsScreen() {
       </View>
 
       <FlatList
-        data={MOCK_NOTIFICATIONS}
+        data={notifications}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
