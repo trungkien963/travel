@@ -48,24 +48,6 @@ export function useExpenses(tripId?: string) {
         if (error) throw error;
         if (data) {
           addExpense({ ...expense, id: data.id });
-
-          if (trip && trip.members) {
-             const notifsToInsert = trip.members
-              .filter(m => m.id !== currentUserId)
-              .map(m => ({
-                user_id: m.id,
-                actor_name: actorName,
-                actor_avatar: actorAvatar,
-                type: 'EXPENSE_ADDED',
-                message: `added an expense: ${expense.desc} - $${expense.amount}`,
-                trip_id: tripId,
-                expense_id: data.id,
-                is_read: false
-              }));
-             if (notifsToInsert.length > 0) {
-               await supabase.from('notifications').insert(notifsToInsert);
-             }
-          }
         }
       }
     } catch (error) {

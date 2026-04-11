@@ -105,6 +105,7 @@ export const useTravelStore = create<TravelState>()(
           .select('*')
           .eq('user_id', currentUserId)
           .order('created_at', { ascending: false })
+          .limit(30)
           .then(({ data, error }) => {
             if (!error && data) {
               const formattedList = data.map((n: any) => ({

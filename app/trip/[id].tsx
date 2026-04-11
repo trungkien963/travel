@@ -5,7 +5,7 @@ import { ArrowLeft, Users, Calendar as CalendarIcon, ArrowRight, Trash2, Plus, I
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTravelStore } from '../../src/store/useTravelStore';
-import { MOCK_MEMBERS } from '../../src/constants/mockData';
+
 import { useTrip } from '../../src/hooks/useTrip';
 import { useSocial } from '../../src/hooks/useSocial';
 import { useExpenses } from '../../src/hooks/useExpenses';
@@ -176,7 +176,7 @@ export default function TripDetailsScreen() {
          : debts.map(d => `<div class="row"><span>${d.fromName} owes ${d.toName}</span><span class="amount">${formatCurrency(d.amount.toString())} ₫</span></div>`).join('');
          
       let expensesHtml = expenses.map(e => {
-         const payer = MOCK_MEMBERS.find(m => m.id === e.payerId)?.name || 'Someone';
+         const payer = trip?.members.find(m => m.id === e.payerId)?.name || 'Someone';
          return `<div class="row">
            <span>${e.date} &bull; ${e.desc} <br/><small style="color:#6B7280">Paid by ${payer}</small></span>
            <span class="amount">${formatCurrency(e.amount.toString())} ₫</span>
@@ -235,7 +235,7 @@ export default function TripDetailsScreen() {
     try {
        let csvContent = "Date,Description,Category,Payer,Amount(VND)\n";
        expenses.forEach(e => {
-         const payer = MOCK_MEMBERS.find(m => m.id === e.payerId)?.name || 'Someone';
+         const payer = trip?.members.find(m => m.id === e.payerId)?.name || 'Someone';
          csvContent += `"${e.date}","${e.desc}","${e.category || 'OTHER'}","${payer}",${e.amount}\n`;
        });
        
@@ -417,7 +417,7 @@ export default function TripDetailsScreen() {
                ) : (
                  <View style={styles.expensesList}>
                    {expenses.map(exp => {
-                     const payer = MOCK_MEMBERS.find(m => m.id === exp.payerId)?.name || 'Someone';
+                     const payer = trip?.members.find(m => m.id === exp.payerId)?.name || 'Someone';
                      return (
                        <TouchableOpacity 
                          key={exp.id} 

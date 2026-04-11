@@ -7,7 +7,26 @@ import { ChevronLeft, MapPin, DollarSign, MessageCircle, Heart, Plane, Bell } fr
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { notifications, refreshData } = useTravelStore();
+  const { notifications, refreshData, markNotificationAsRead } = useTravelStore();
+
+  const handlePress = (item: AppNotification) => {
+    if (!item.isRead) {
+      markNotificationAsRead(item.id);
+    }
+    
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/discover');
+    }
+
+    if (item.tripId) {
+      // Use setTimeout to allow the modal dismiss animation to complete
+      setTimeout(() => {
+        router.push(`/trip/${item.tripId}` as any);
+      }, 200);
+    }
+  };
 
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
@@ -55,6 +74,7 @@ export default function NotificationsScreen() {
       <TouchableOpacity 
         style={[styles.notificationCard, !item.isRead && styles.unreadCard]}
         activeOpacity={0.8}
+        onPress={() => handlePress(item)}
       >
         <Image source={{ uri: item.actorAvatar }} style={styles.avatar} />
         

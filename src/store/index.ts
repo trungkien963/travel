@@ -1,19 +1,4 @@
-import { create } from 'zustand'
-import { persist, StateStorage, createJSONStorage } from 'zustand/middleware'
-import { storage } from '../lib/supabase'
 
-const zustandStorage: StateStorage = {
-  setItem: (name, value) => {
-    return storage.setItem(name, value) as any
-  },
-  getItem: async (name) => {
-    const value = await storage.getItem(name)
-    return value ?? null
-  },
-  removeItem: (name) => {
-    return storage.removeItem(name) as any
-  },
-}
 
 interface AppState {
   hasHydrated: boolean
@@ -22,20 +7,11 @@ interface AppState {
   setUser: (user: any) => void
 }
 
-export const useAppStore = create<AppState>()(
-  persist(
-    (set) => ({
-      hasHydrated: false,
-      setHasHydrated: (state) => set({ hasHydrated: state }),
-      user: null,
-      setUser: (user) => set({ user }),
-    }),
-    {
-      name: 'travel-app-storage',
-      storage: createJSONStorage(() => zustandStorage),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true)
-      },
-    }
-  )
-)
+import { create } from 'zustand'
+
+export const useAppStore = create<AppState>()((set) => ({
+  hasHydrated: true,
+  setHasHydrated: (state) => set({ hasHydrated: state }),
+  user: null,
+  setUser: (user) => set({ user }),
+}))

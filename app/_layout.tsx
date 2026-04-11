@@ -14,6 +14,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { useTravelStore } from '../src/store/useTravelStore';
 import { supabase } from '../src/lib/supabase';
+import { GlobalLoadingOverlay } from '../src/components/GlobalLoadingOverlay';
+import { usePushNotifications } from '../src/hooks/usePushNotifications';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -59,6 +61,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthGuard>
             <RootLayoutNav />
+            <GlobalLoadingOverlay />
           </AuthGuard>
         </QueryClientProvider>
       </BottomSheetModalProvider>
@@ -69,6 +72,17 @@ export default function RootLayout() {
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
+  const { expoPushToken } = usePushNotifications();
+  const currentUserId = useTravelStore((state) => state.currentUserId);
+
+  useEffect(() => {
+    if (currentUserId && expoPushToken) {
+      supabase.from('users').update({ expo_push_token: expoPushToken }).eq('id', currentUserId)
+        .then(({ error }) => {
+          if (error) console.error("Error saving push token", error);
+        });
+    }
+  }, [currentUserId, expoPushToken]);
 
   useEffect(() => {
     // Initial check

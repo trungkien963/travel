@@ -24,24 +24,6 @@ export function useSocial(tripId?: string) {
       if (error) throw error;
       updateStorePost(postId, { hasLiked: !p.hasLiked, likes: newLikes });
 
-      const { currentUserId, currentUserProfile, trips } = useTravelStore.getState();
-      if (!p.hasLiked && p.authorId !== currentUserId) {
-        const trip = trips.find(t => t.id === p.tripId);
-        const userMember = trip?.members.find(m => m.id === currentUserId);
-        const actorName = currentUserProfile?.name || userMember?.name || 'Traveler';
-        const actorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
-        
-        await supabase.from('notifications').insert({
-          user_id: p.authorId,
-          actor_name: actorName,
-          actor_avatar: actorAvatar,
-          type: 'POST_LIKE',
-          message: 'liked your moment.',
-          trip_id: p.tripId,
-          post_id: p.id,
-          is_read: false
-        });
-      }
     } catch (e) {
       Alert.alert('Error', 'Failed to toggle like.');
     } finally {
@@ -76,18 +58,6 @@ export function useSocial(tripId?: string) {
       if (error) throw error;
       updateStorePost(postId, { comments: newCommentsList });
 
-      if (p.authorId !== currentUserId) {
-        await supabase.from('notifications').insert({
-          user_id: p.authorId,
-          actor_name: commentAuthorName,
-          actor_avatar: commentAuthorAvatar,
-          type: 'POST_COMMENT',
-          message: `commented: "${text.length > 20 ? text.substring(0, 20) + '...' : text}"`,
-          trip_id: p.tripId,
-          post_id: p.id,
-          is_read: false
-        });
-      }
     } catch (e) {
       Alert.alert('Error', 'Failed to add comment.');
     } finally {
@@ -144,24 +114,6 @@ export function useSocial(tripId?: string) {
         };
         addStorePost(newPost);
 
-        if (trip && trip.members) {
-          const notifsToInsert = trip.members
-            .filter(m => m.id !== currentUserId)
-            .map(m => ({
-              user_id: m.id,
-              actor_name: authorName,
-              actor_avatar: authorAvatar,
-              type: 'POST_NEW',
-              message: 'added a new moment to the trip.',
-              trip_id: trip.id,
-              post_id: data.id,
-              is_read: false
-            }));
-            
-          if (notifsToInsert.length > 0) {
-            await supabase.from('notifications').insert(notifsToInsert);
-          }
-        }
       }
     } catch (e) {
       console.error(e);

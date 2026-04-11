@@ -22,23 +22,28 @@ export function useTrip(tripId: string) {
 
   const removeMember = async (memberId: string) => {
     if (!trip) return;
-    await updateTrip({ members: trip.members.filter(m => m.id !== memberId) });
+    const newMembers = trip.members.filter(m => m.id !== memberId);
+    await updateTrip({ members: newMembers });
   };
 
   const addMember = async (member: Member) => {
     if (!trip) return;
-    await updateTrip({ members: [...trip.members, member] });
+    const newMembers = [...trip.members, member];
+    await updateTrip({ members: newMembers });
   };
 
   const editMember = async (member: Member) => {
     if (!trip) return;
-    await updateTrip({ members: trip.members.map(m => m.id === member.id ? member : m) });
+    const newMembers = trip.members.map(m => m.id === member.id ? member : m);
+    await updateTrip({ members: newMembers });
   };
 
   const updateTrip = async (updatedData: Partial<Trip>) => {
     if (!trip) return;
-    updateStoreTrip(trip.id, updatedData);
-    if (!trip.id.startsWith('t')) {
+    const { setGlobalLoading } = useTravelStore.getState();
+    setGlobalLoading(true);
+
+    try {
        const updatePayload: any = {
          title: updatedData.title,
          start_date: updatedData.startDate,
@@ -48,10 +53,22 @@ export function useTrip(tripId: string) {
          location_city: updatedData.locationCity,
          is_private: updatedData.isPrivate
        };
+       // clean undefined
+       Object.keys(updatePayload).forEach(key => updatePayload[key] === undefined && delete updatePayload[key]);
+
        if (updatedData.members) {
          updatePayload.members = updatedData.members;
        }
-       await supabase.from('trips').update(updatePayload).eq('id', trip.id);
+       
+       const { error } = await supabase.from('trips').update(updatePayload).eq('id', trip.id);
+       if (error) throw error;
+       
+       updateStoreTrip(trip.id, updatedData);
+    } catch (error) {
+       console.error("Update trip error", error);
+       alert("Failed to update trip. Please check your connection.");
+    } finally {
+       setGlobalLoading(false);
     }
   };
 

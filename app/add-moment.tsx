@@ -4,7 +4,7 @@ import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { MOCK_MEMBERS } from '../src/constants/mockData';
+
 import { useTravelStore } from '../src/store/useTravelStore';
 import { SplitType } from '../src/types/expense';
 import { useLocationSearch, LocationResult } from '../src/hooks/useLocationSearch';
@@ -33,7 +33,7 @@ export default function AddMomentScreen() {
   const { trips, addExpense, addPost, currentUserId, currentUserProfile } = useTravelStore();
   
   const currentTrip = trips.find(t => t.id === tripId);
-  const tripMembers = currentTrip?.members || MOCK_MEMBERS;
+  const tripMembers = currentTrip?.members && currentTrip.members.length > 0 ? currentTrip.members : [{ id: currentUserId || 'm1', name: currentUserProfile?.name || 'Me', isMe: true }];
   
   // Expense States
   const [isExpenseMode, setIsExpenseMode] = useState(false);
@@ -479,7 +479,7 @@ export default function AddMomentScreen() {
 
                <Text style={[styles.fieldLabel, { color: '#A8A29E' }]}>PAID BY</Text>
                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-                  {MOCK_MEMBERS.map(member => (
+                  {tripMembers.map(member => (
                     <TouchableOpacity 
                       key={member.id} 
                       style={paidBy === member.id ? styles.paidByActivePill : styles.paidByInactivePill}
@@ -492,7 +492,7 @@ export default function AddMomentScreen() {
 
                <Text style={[styles.fieldLabel, { color: '#A8A29E' }]}>SPLIT EQUALLY</Text>
                <View style={styles.membersList}>
-                 {MOCK_MEMBERS.map(member => {
+                 {tripMembers.map(member => {
                    const isIncluded = includedMembers[member.id];
                    return (
                      <View key={`exm-${member.id}`} style={[styles.splitUserRow, !isIncluded && styles.splitUserRowDisabled]}>

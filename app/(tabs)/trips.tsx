@@ -548,24 +548,48 @@ export default function MyTripsScreen() {
                          isMe: false
                        }));
 
-                       addTrip({
-                         id: newTripId,
-                         title: tripTitle || 'Untitled Trip',
-                         coverImage: finalCoverUrl,
-                         locationName: selectedLocation?.name,
-                         locationCity: selectedLocation?.city,
-                         startDate: startDate.toISOString().split('T')[0],
-                         endDate: endDate.toISOString().split('T')[0],
-                         ownerId: ownerMember.id,
-                         members: [ownerMember, ...guestMembers],
-                         isPrivate: true
-                       });
-                       setIsCreating(false);
-                       setModalVisible(false);
-                       setStep(1);
-                       setMembers([]);
-                       setTripTitle('');
-                       setCoverImage(null);
+                       const { setGlobalLoading } = useTravelStore.getState();
+                       setGlobalLoading(true);
+                       try {
+                         const { data, error } = await supabase.from('trips').insert({
+                           title: tripTitle || 'Untitled Trip',
+                           cover_image: finalCoverUrl,
+                           location_name: selectedLocation?.name,
+                           location_city: selectedLocation?.city,
+                           start_date: startDate.toISOString().split('T')[0],
+                           end_date: endDate.toISOString().split('T')[0],
+                           owner_id: ownerMember.id,
+                           members: [ownerMember, ...guestMembers],
+                           is_private: true
+                         }).select().single();
+                         
+                         if (error) throw error;
+
+                         addTrip({
+                           id: data.id,
+                           title: data.title,
+                           coverImage: data.cover_image,
+                           locationName: data.location_name,
+                           locationCity: data.location_city,
+                           startDate: data.start_date,
+                           endDate: data.end_date,
+                           ownerId: data.owner_id,
+                           members: data.members,
+                           isPrivate: data.is_private
+                         });
+                         
+                         setIsCreating(false);
+                         setModalVisible(false);
+                         setStep(1);
+                         setMembers([]);
+                         setTripTitle('');
+                         setCoverImage(null);
+                       } catch (error) {
+                         Alert.alert('Error', 'Failed to create trip. Please try again.');
+                         setIsCreating(false);
+                       } finally {
+                         setGlobalLoading(false);
+                       }
                     }}
                   >
                     <Text className="text-[#1C1917] font-bold text-base">

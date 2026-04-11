@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Member } from '../types/expense';
-import { MOCK_FRIENDS } from '../constants/mockData';
+
 
 const { height } = Dimensions.get('window');
 
@@ -49,10 +49,7 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
     // Close & reset handled by parent / effect
   };
 
-  const filteredFriends = MOCK_FRIENDS.filter(f => 
-    name.length > 1 && 
-    (f.name.toLowerCase().includes(name.toLowerCase()) || f.username.toLowerCase().includes(name.toLowerCase()))
-  );
+  const filteredFriends: any[] = [];
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
