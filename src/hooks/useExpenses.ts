@@ -13,20 +13,29 @@ export function useExpenses(tripId?: string) {
   }, [allExpenses, tripId]);
 
   const saveExpense = async (expense: Expense, isEditing: boolean) => {
-    if (isEditing) {
-      updateStoreExpense(expense.id, expense);
-      if (!expense.id.startsWith('e')) {
-        await supabase.from('expenses').update({
+    const { setGlobalLoading } = useTravelStore.getState();
+    setGlobalLoading(true);
+    
+    try {
+      if (isEditing) {
+        const { error } = await supabase.from('expenses').update({
           amount: expense.amount,
           description: expense.desc,
           category: expense.category || 'OTHER',
           splits: expense.splits || {}
         }).eq('id', expense.id);
-      }
-    } else {
-      addExpense(expense);
-      if (tripId && !tripId.startsWith('t')) {
-        const { currentUserId } = useTravelStore.getState();
+        
+        if (error) throw error;
+        updateStoreExpense(expense.id, expense);
+      } else {
+        if (!tripId) throw new Error("Missing tripId");
+        
+        const { currentUserId, currentUserProfile, trips } = useTravelStore.getState();
+        const trip = trips.find(t => t.id === tripId);
+        const userMember = trip?.members?.find(m => m.id === currentUserId);
+        const actorName = currentUserProfile?.name || userMember?.name || 'Traveler';
+        const actorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
+
         const { data, error } = await supabase.from('expenses').insert({
           trip_id: tripId,
           payer_id: currentUserId,
@@ -36,19 +45,49 @@ export function useExpenses(tripId?: string) {
           splits: expense.splits || {}
         }).select().single();
         
+        if (error) throw error;
         if (data) {
-          updateStoreExpense(expense.id, { id: data.id });
-        } else if (error) {
-          console.error("Failed to sync expense to cloud", error);
+          addExpense({ ...expense, id: data.id });
+
+          if (trip && trip.members) {
+             const notifsToInsert = trip.members
+              .filter(m => m.id !== currentUserId)
+              .map(m => ({
+                user_id: m.id,
+                actor_name: actorName,
+                actor_avatar: actorAvatar,
+                type: 'EXPENSE_ADDED',
+                message: `added an expense: ${expense.desc} - $${expense.amount}`,
+                trip_id: tripId,
+                expense_id: data.id,
+                is_read: false
+              }));
+             if (notifsToInsert.length > 0) {
+               await supabase.from('notifications').insert(notifsToInsert);
+             }
+          }
         }
       }
+    } catch (error) {
+      console.error("Save expense failed", error);
+      alert("Failed to save expense. Please check your connection.");
+    } finally {
+      setGlobalLoading(false);
     }
   };
 
   const deleteExpenseWrapper = async (id: string) => {
-    deleteExpense(id);
-    if (!id.startsWith('e')) {
-      await supabase.from('expenses').delete().eq('id', id);
+    const { setGlobalLoading } = useTravelStore.getState();
+    setGlobalLoading(true);
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+      deleteExpense(id);
+    } catch (e) {
+      console.error("Delete expense failed", e);
+      alert("Failed to delete expense.");
+    } finally {
+      setGlobalLoading(false);
     }
   };
 

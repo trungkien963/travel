@@ -1,11 +1,9 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Trip } from '../types/trip';
 import { Expense } from '../types/expense';
 import { Post } from '../types/social';
 import { AppNotification } from '../types/notification';
-import { MOCK_MEMBERS } from '../constants/mockData';
+
 import { supabase } from '../lib/supabase';
 
 interface TravelState {
@@ -38,14 +36,17 @@ interface TravelState {
   isSyncing: boolean;
   initSupabase: () => Promise<void>;
   refreshData: () => Promise<void>;
-  pushTripToCloud: (trip: Trip) => Promise<void>;
+  isGlobalLoading: boolean;
+  setGlobalLoading: (isLoading: boolean) => void;
+  setupRealtimeNotifications: () => void;
 }
 
 export const useTravelStore = create<TravelState>()(
-  persist(
     (set, get) => ({
-      currentUserId: '', // Will be updated on auth
+      currentUserId: '', 
       currentUserProfile: undefined,
+      isGlobalLoading: false,
+      setGlobalLoading: (isLoading) => set({ isGlobalLoading: isLoading }),
       setCurrentUserId: (id) => set({ currentUserId: id }),
       trips: [] as Trip[],
       expenses: [] as Expense[],
@@ -55,22 +56,11 @@ export const useTravelStore = create<TravelState>()(
       setTrips: (trips) => set({ trips }),
       addTrip: (trip) => {
         set((state) => ({ trips: [trip, ...state.trips] }));
-        get().pushTripToCloud(trip);
       },
       updateTrip: (id, data) => set((state) => ({
         trips: state.trips.map(t => t.id === id ? { ...t, ...data } : t)
       })),
       deleteTrip: async (id) => {
-        // If it's a cloud trip (not starting with 't'), attempt to delete from Cloud first
-        if (id && !String(id).startsWith('t')) {
-          const { error } = await supabase.from('trips').delete().eq('id', id);
-          if (error) {
-             console.error("Failed to delete from supabase:", error);
-             throw new Error("Unable to delete trip from cloud. Check your permissions.");
-          }
-        }
-        
-        // If cloud delete succeeds, or it was a local unsynced trip, remove locally
         set((state) => ({
           trips: state.trips.filter(t => t.id !== id),
           expenses: state.expenses.filter(e => e.tripId !== id),
@@ -95,9 +85,73 @@ export const useTravelStore = create<TravelState>()(
       })),
       
       addNotification: (notification) => set((state) => ({ notifications: [notification, ...state.notifications] })),
-      markNotificationAsRead: (id) => set((state) => ({
-        notifications: state.notifications.map(n => n.id === id ? { ...n, isRead: true } : n)
-      })),
+      markNotificationAsRead: async (id) => {
+        set((state) => ({
+          notifications: state.notifications.map(n => n.id === id ? { ...n, isRead: true } : n)
+        }));
+        try {
+          await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+        } catch (err) {
+          console.error("Failed to mark notification as read", err);
+        }
+      },
+
+      setupRealtimeNotifications: () => {
+        const currentUserId = get().currentUserId;
+        if (!currentUserId) return;
+
+        // Fetch initial notifications
+        supabase.from('notifications')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: false })
+          .then(({ data, error }) => {
+            if (!error && data) {
+              const formattedList = data.map((n: any) => ({
+                id: n.id,
+                type: n.type,
+                actorName: n.actor_name,
+                actorAvatar: n.actor_avatar,
+                message: n.message,
+                tripId: n.trip_id,
+                postId: n.post_id,
+                expenseId: n.expense_id,
+                createdAt: n.created_at,
+                isRead: n.is_read
+              }));
+              set({ notifications: formattedList });
+            }
+          });
+
+        // Setup realtime subscription
+        const channel = supabase.channel('public:notifications')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${currentUserId}`
+            },
+            (payload) => {
+              const newNotif = payload.new;
+              const formattedNotif: AppNotification = {
+                id: newNotif.id,
+                type: newNotif.type,
+                actorName: newNotif.actor_name,
+                actorAvatar: newNotif.actor_avatar,
+                message: newNotif.message,
+                tripId: newNotif.trip_id,
+                postId: newNotif.post_id,
+                expenseId: newNotif.expense_id,
+                createdAt: newNotif.created_at,
+                isRead: newNotif.is_read
+              };
+              set((state) => ({ notifications: [formattedNotif, ...state.notifications] }));
+            }
+          )
+          .subscribe();
+      },
 
       isSyncing: false,
       initSupabase: async () => {
@@ -125,6 +179,7 @@ export const useTravelStore = create<TravelState>()(
              } catch (err) {
                console.log("Failed to sync auth.user to public.users", err);
              }
+             get().setupRealtimeNotifications();
           }
 
           const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*');
@@ -141,16 +196,11 @@ export const useTravelStore = create<TravelState>()(
                 endDate: t.end_date,
                 ownerId: t.owner_id || get().currentUserId,
                 isPrivate: t.is_private,
-                members: MOCK_MEMBERS, // Temporarily still use mock members
+                members: [],
               };
             });
             
-            // Merge with local trips (avoiding duplicates by ID)
-            set((state) => {
-              const localTripIds = new Set(state.trips.map(x => x.id));
-              const newCloudTrips = formattedTrips.filter(t => !localTripIds.has(t.id));
-              return { trips: [...newCloudTrips, ...state.trips] };
-            });
+            set({ trips: formattedTrips });
           }
         } catch (err) {
           console.error("Supabase sync failed", err);
@@ -174,7 +224,7 @@ export const useTravelStore = create<TravelState>()(
                 endDate: t.end_date,
                 ownerId: t.owner_id || get().currentUserId,
                 isPrivate: t.is_private,
-                members: t.members && Array.isArray(t.members) && t.members.length > 0 ? t.members : MOCK_MEMBERS, // Now reads from DB JSONB
+                members: t.members && Array.isArray(t.members) ? t.members : [], // Now reads from DB JSONB
               };
             });
             
@@ -186,8 +236,8 @@ export const useTravelStore = create<TravelState>()(
               id: p.id,
               tripId: p.trip_id,
               authorId: p.user_id,
-              authorName: 'Traveler', // Replaces with MOCK_MEMBERS or user DB details in useSocial if needed, for now just placeholder to not crash UI
-              authorAvatar: undefined,
+              authorName: formattedTrips.find(trip => trip.id === p.trip_id)?.members?.find((m: any) => m.id === p.user_id)?.name || 'Traveler',
+              authorAvatar: formattedTrips.find(trip => trip.id === p.trip_id)?.members?.find((m: any) => m.id === p.user_id)?.avatar || undefined,
               content: p.content || '',
               images: p.image_urls || [],
               isDual: p.is_dual_camera || false,
@@ -215,66 +265,12 @@ export const useTravelStore = create<TravelState>()(
             }));
           }
 
-          set((state) => {
-            // Trips
-            const localUnsyncedTrips = state.trips.filter(t => t.id && String(t.id).startsWith('t'));
-            const cloudTripTitles = new Set(formattedTrips.map(ct => ct.title));
-            const uniqueLocalTrips = localUnsyncedTrips.filter(t => !cloudTripTitles.has(t.title));
-            
-            // Posts
-            const localUnsyncedPosts = state.posts.filter(p => p.id && String(p.id).startsWith('p'));
-            const cloudPostContent = new Set(formattedPosts.map(cp => cp.content));
-            const uniqueLocalPosts = localUnsyncedPosts.filter(p => !cloudPostContent.has(p.content));
-            
-            const localUnsyncedExpenses = state.expenses.filter(e => e.id && String(e.id).startsWith('e'));
-            const cloudExpenseDescs = new Set(formattedExpenses.map(ce => ce.desc));
-            const uniqueLocalExpenses = localUnsyncedExpenses.filter(e => !cloudExpenseDescs.has(e.desc));
-
-            return { 
-               trips: [...formattedTrips, ...uniqueLocalTrips],
-               posts: [...formattedPosts, ...uniqueLocalPosts],
-               expenses: [...formattedExpenses, ...uniqueLocalExpenses]
-            };
-          });
+          set({ trips: formattedTrips, posts: formattedPosts, expenses: formattedExpenses });
           }
         } catch (err) {
           console.error("Refresh failed", err);
         }
       },
 
-      pushTripToCloud: async (trip) => {
-          try {
-           const { data, error } = await supabase.from('trips').insert({
-             title: trip.title,
-             cover_image: trip.coverImage,
-             location_name: trip.locationName || null,
-             location_city: trip.locationCity || null,
-             start_date: trip.startDate,
-             end_date: trip.endDate,
-             is_private: trip.isPrivate,
-             owner_id: trip.ownerId || get().currentUserId || null
-           }).select().single();
-           
-           if (error) {
-             console.log("Failed to push trip details", error);
-             return;
-           }
-           
-           // CRITICAL: Update the local temporary ID with the real Cloud UUID!
-           set((state) => ({
-             trips: state.trips.map(t => t.id === trip.id ? { ...t, id: data.id } : t),
-             expenses: state.expenses.map(e => e.tripId === trip.id ? { ...e, tripId: data.id } : e),
-             posts: state.posts.map(p => p.tripId === trip.id ? { ...p, tripId: data.id } : p)
-           }));
-           
-         } catch(err) {
-           console.log("Failed to push to cloud", err);
-         }
-      }
-    }),
-    {
-      name: 'travel-storage-v2',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    })
 );
