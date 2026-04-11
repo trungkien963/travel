@@ -160,6 +160,19 @@ export const useTravelStore = create<TravelState>()(
             }
           )
           .subscribe();
+
+        // Setup realtime subscription for data sync
+        const syncChannel = supabase.channel('public:sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
+            get().refreshData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+            get().refreshData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+            get().refreshData();
+          })
+          .subscribe();
       },
 
       isSyncing: false,
@@ -272,6 +285,33 @@ export const useTravelStore = create<TravelState>()(
               category: e.category || 'OTHER',
               splits: e.splits || {} // Now reads from DB JSONB
             }));
+          }
+
+          // Fetch Notifications
+          const currentUserId = get().currentUserId;
+          if (currentUserId) {
+            const { data: notifsData, error: notifsError } = await supabase.from('notifications')
+              .select('*')
+              .eq('user_id', currentUserId)
+              .order('created_at', { ascending: false })
+              .limit(30);
+
+            if (!notifsError && notifsData) {
+              const formattedList = notifsData.map((n: any) => ({
+                id: n.id,
+                type: n.type,
+                actorName: n.actor_name,
+                actorAvatar: n.actor_avatar,
+                message: n.message,
+                tripId: n.trip_id,
+                postId: n.post_id,
+                expenseId: n.expense_id,
+                createdAt: n.created_at,
+                isRead: n.is_read
+              }));
+              Notifications.setBadgeCountAsync(formattedList.filter((n: any) => !n.isRead).length);
+              set({ notifications: formattedList });
+            }
           }
 
           set({ trips: formattedTrips, posts: formattedPosts, expenses: formattedExpenses });
