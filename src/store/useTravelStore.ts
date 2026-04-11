@@ -62,11 +62,21 @@ export const useTravelStore = create<TravelState>()(
         trips: state.trips.map(t => t.id === id ? { ...t, ...data } : t)
       })),
       deleteTrip: async (id) => {
-        set((state) => ({
-          trips: state.trips.filter(t => t.id !== id),
-          expenses: state.expenses.filter(e => e.tripId !== id),
-          posts: state.posts.filter(p => p.tripId !== id)
-        }));
+        try {
+          const { error } = await supabase.from('trips').delete().eq('id', id);
+          if (error) {
+            console.error("Delete trip failed on cloud", error);
+            throw error;
+          }
+          set((state) => ({
+            trips: state.trips.filter(t => t.id !== id),
+            expenses: state.expenses.filter(e => e.tripId !== id),
+            posts: state.posts.filter(p => p.tripId !== id)
+          }));
+        } catch (e) {
+           console.error(e);
+           throw e;
+        }
       },
 
       addExpense: (expense) => set((state) => ({ expenses: [expense, ...state.expenses] })),
