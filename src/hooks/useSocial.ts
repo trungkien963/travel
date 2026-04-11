@@ -20,17 +20,26 @@ export function useSocial(tripId?: string) {
   const addComment = (postId: string, text: string) => {
     const p = allPosts.find(x => x.id === postId);
     if (!p) return;
+    
+    const { currentUserId, currentUserProfile, trips } = useTravelStore.getState();
+    const trip = trips.find(t => t.id === p.tripId);
+    const userMember = trip?.members.find(m => m.id === currentUserId);
+    
+    const commentAuthorName = currentUserProfile?.name || userMember?.name || 'Traveler';
+    const commentAuthorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
+    
     const newComment: Comment = {
       id: 'c' + Date.now().toString(),
-      authorId: 'm1', // Hardcoded as logged-in user Edric
-      authorName: 'You (Edric)',
+      authorId: currentUserId || 'm1',
+      authorName: commentAuthorName,
+      authorAvatar: commentAuthorAvatar,
       text: text,
-      timestamp: 'Just now'
+      timestamp: new Date().toISOString()
     };
     updateStorePost(postId, { comments: [...p.comments, newComment] });
   };
 
-  const addPost = (content: string, images: string[], authorId: string, authorName: string, targetTripId?: string) => {
+  const addPost = (content: string, images: string[], authorId: string, authorName: string, targetTripId?: string, isDual?: boolean) => {
     const newPost: Post & { tripId?: string } = {
       id: 'p' + Date.now().toString(),
       tripId: targetTripId || tripId,
@@ -38,7 +47,8 @@ export function useSocial(tripId?: string) {
       authorName,
       content,
       images,
-      timestamp: 'Just now',
+      isDual: isDual || false,
+      timestamp: new Date().toISOString(),
       date: new Date().toISOString().split('T')[0],
       likes: 0,
       hasLiked: false,

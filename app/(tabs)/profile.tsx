@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar 
 import { Settings, Shield, HelpCircle, ChevronRight, LogOut, Edit3, Compass } from 'lucide-react-native';
 import { supabase } from '../../src/lib/supabase';
 import { useRouter } from 'expo-router';
+import { useTravelStore } from '../../src/store/useTravelStore';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -100,6 +101,17 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
             <LogOut size={20} color="#EF4444" />
             <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+
+          {/* Dev/Temp clear state to wipe persisted mock data */}
+          <TouchableOpacity 
+             style={[styles.signOutBtn, { marginTop: 16, borderTopWidth: 0, justifyContent: 'center' }]} 
+             onPress={() => {
+                useTravelStore.setState({ trips: [], expenses: [], posts: [], notifications: [] });
+                alert('App data cache cleared! Go back to My Trips.');
+             }}
+          >
+            <Text style={[styles.signOutText, { color: '#A8A29E', fontSize: 13, textDecorationLine: 'underline' }]}>Developer: Reset App Data</Text>
           </TouchableOpacity>
 
       </ScrollView>

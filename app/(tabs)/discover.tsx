@@ -14,29 +14,12 @@ export default function DiscoverScreen() {
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>Discover</Text>
             <Sparkles size={20} color="#FFC800" />
-            <Link 
-              href="/"
-              style={{ 
-                marginLeft: 12, 
-                backgroundColor: '#F3F4F6', 
-                paddingHorizontal: 12, 
-                paddingVertical: 6, 
-                borderRadius: 12,
-                overflow: 'hidden'
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#1C1917' }}>TEST LANDING PAGE</Text>
-            </Link>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity onPress={() => router.push('/notifications')} style={styles.bellButton}>
               <Bell size={24} color="#1C1917" />
               <View style={styles.notificationDot} />
             </TouchableOpacity>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} 
-              style={styles.avatarMini}
-            />
           </View>
         </View>
 

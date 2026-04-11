@@ -25,10 +25,15 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 
 export default function TripDetailsScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, tab } = useLocalSearchParams();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('SOCIAL');
+  const [activeTab, setActiveTab] = useState(tab ? (tab as string) : 'SOCIAL');
+  
+  // React to tab parameter changes
+  React.useEffect(() => {
+    if (tab) setActiveTab(tab as string);
+  }, [tab]);
   
   const { trip, isOwner, currentUserId, addMember, editMember, removeMember, updateTrip } = useTrip(id as string);
   const { posts, toggleLike, addComment, addPost, editPost, deletePost: deleteSocialPost } = useSocial(id as string);
@@ -90,11 +95,14 @@ export default function TripDetailsScreen() {
     setMemberModalVisible(false);
   };
 
-  const handleSavePost = (content: string, images: string[], expenseData?: Expense) => {
+  const handleSavePost = (content: string, images: string[], expenseData?: Expense, isDual?: boolean) => {
     if (editingPost) {
       editPost(editingPost.id, content, images);
     } else {
-      addPost(content, images, currentUserId, 'You (Edric)');
+      const userMember = trip?.members.find(m => m.id === currentUserId);
+      const postAuthorName = useTravelStore.getState().currentUserProfile?.name || userMember?.name || 'You';
+      
+      addPost(content, images, currentUserId || 'm1', postAuthorName, id as string, isDual);
     }
 
     if (expenseData) {

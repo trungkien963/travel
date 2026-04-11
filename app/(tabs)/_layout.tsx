@@ -5,6 +5,10 @@ import { Home, Map, Camera, User } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+export const unstable_settings = {
+  initialRouteName: 'discover',
+};
+
 export default function TabLayout() {
   const router = useRouter();
 
@@ -32,7 +36,7 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="index"
+        name="discover"
         options={{
           tabBarIcon: ({ color }) => <Home size={26} color={color} />,
         }}

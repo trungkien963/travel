@@ -10,6 +10,8 @@ import { supabase } from '../lib/supabase';
 
 interface TravelState {
   currentUserId: string;
+  currentUserProfile?: { name: string; avatar?: string };
+  setCurrentUserId: (id: string) => void;
   trips: Trip[];
   expenses: Expense[];
   posts: Post[];
@@ -41,30 +43,13 @@ interface TravelState {
 export const useTravelStore = create<TravelState>()(
   persist(
     (set, get) => ({
-      currentUserId: 'm1', // Default ID for "You"
-      trips: MOCK_TRIPS.map(t => ({
-        ...t,
-        coverImage: 'https://images.unsplash.com/photo-1473496169904-6a58eb22bf2f?q=80&w=1000&auto=format&fit=crop',
-        ownerId: 'm1',
-        members: MOCK_MEMBERS,
-        isPrivate: true
-      })) as Trip[],
-      expenses: [
-        { id: 'e1', tripId: '1', desc: 'Vé vào cổng Resort', amount: 1500000, payerId: 'm1', date: '2026-04-10', category: 'ACTIVITIES' },
-        { id: 'e2', tripId: '1', desc: 'Tiệc BBQ bãi biển', amount: 4200000, payerId: 'm2', date: '2026-04-10', category: 'FOOD' }
-      ] as Expense[],
-      posts: [
-        {
-          id: 'p1', tripId: '1', authorId: 'm2', authorName: 'Jane Doe', content: 'Chuyến đi Bali này đỉnh quá mọi người ơi! Hoàng hôn tuyệt đẹp 🌅 Cảm ơn cả nhóm đã đồng hành!',
-          images: [
-            'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1542385151-efd9000785a0?w=800&auto=format&fit=crop'
-          ],
-          timestamp: '2 hours ago', date: '2026-04-10', likes: 12, hasLiked: true,
-          comments: [{ id: 'c1', authorId: 'm3', authorName: 'Khoi Nguyen', text: 'Chụp hình xịn quá, gửi file gốc đi bà!', timestamp: '1 hour ago' }]
-        }
-      ] as Post[],
-      notifications: MOCK_NOTIFICATIONS,
+      currentUserId: '', // Will be updated on auth
+      currentUserProfile: undefined,
+      setCurrentUserId: (id) => set({ currentUserId: id }),
+      trips: [] as Trip[],
+      expenses: [] as Expense[],
+      posts: [] as Post[],
+      notifications: [],
       
       setTrips: (trips) => set({ trips }),
       addTrip: (trip) => {
@@ -111,6 +96,18 @@ export const useTravelStore = create<TravelState>()(
       initSupabase: async () => {
         set({ isSyncing: true });
         try {
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData?.user) {
+             const meta = authData.user.user_metadata;
+             set({ 
+               currentUserId: authData.user.id,
+               currentUserProfile: {
+                 name: meta?.full_name || meta?.name || 'Traveler',
+                 avatar: meta?.avatar_url || meta?.picture || undefined
+               }
+             });
+          }
+
           const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*');
           if (!tripsError && tripsData && tripsData.length > 0) {
             // Transform snake_case from DB back to camelCase for UI

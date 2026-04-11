@@ -7,9 +7,17 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTravelStore } from '../../src/store/useTravelStore';
 import { useLocationSearch, LocationResult } from '../../src/hooks/useLocationSearch';
+import { supabase } from '../../src/lib/supabase';
 
 export default function MyTripsScreen() {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUser(data.user);
+    });
+  }, []);
   const [modalVisible, setModalVisible] = useState(false);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -26,33 +34,41 @@ export default function MyTripsScreen() {
         {
           text: "Snap a Photo",
           onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'We need camera access to snap a photo.');
-              return;
-            }
-            let result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [16, 9],
-              quality: 0.8,
-            });
-            if (!result.canceled) {
-              setCoverImage(result.assets[0].uri);
+            try {
+              const { status } = await ImagePicker.requestCameraPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert('Permission needed', 'We need camera access to snap a photo.');
+                return;
+              }
+              let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+              });
+              if (!result.canceled) {
+                setCoverImage(result.assets[0].uri);
+              }
+            } catch (error: any) {
+              Alert.alert('Camera Error', error?.message || 'Camera is not available on this device/simulator.');
             }
           }
         },
         {
           text: "Choose from Camera Roll",
           onPress: async () => {
-            let result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [16, 9],
-              quality: 0.8,
-            });
-            if (!result.canceled) {
-              setCoverImage(result.assets[0].uri);
+            try {
+              let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+              });
+              if (!result.canceled) {
+                setCoverImage(result.assets[0].uri);
+              }
+            } catch (error: any) {
+              Alert.alert('Gallery Error', error?.message || 'Cannot access photo gallery.');
             }
           }
         },
@@ -164,9 +180,24 @@ export default function MyTripsScreen() {
                      </View>
                    </View>
                    <View style={styles.genzAvatars}>
-                     <View style={styles.genzAvatarCircle}>
-                        <Image source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop' }} style={styles.avatarImage} />
-                     </View>
+                     {t.members && t.members.slice(0, 3).map((m: any, idx: number) => (
+                       <View key={m.id} style={[styles.genzAvatarCircle, { marginLeft: idx > 0 ? -12 : 0, zIndex: 10 - idx }]}>
+                         {m.avatar ? (
+                           <Image source={{ uri: m.avatar }} style={styles.avatarImage} />
+                         ) : (
+                           <View style={{width: '100%', height: '100%', backgroundColor: '#FFC800', alignItems: 'center', justifyContent: 'center'}}>
+                             <Text style={{color: '#1C1917', fontSize: 12, fontWeight: 'bold'}}>{m.name.charAt(0).toUpperCase()}</Text>
+                           </View>
+                         )}
+                       </View>
+                     ))}
+                     {t.members && t.members.length === 0 && (
+                       <View style={styles.genzAvatarCircle}>
+                         <View style={{width: '100%', height: '100%', backgroundColor: '#F0F0F0', alignItems: 'center', justifyContent: 'center'}}>
+                            <Text style={{color: '#A8A29E', fontSize: 10, fontWeight: 'bold'}}>ME</Text>
+                         </View>
+                       </View>
+                     )}
                    </View>
                 </View>
               </TouchableOpacity>
@@ -230,7 +261,7 @@ export default function MyTripsScreen() {
                     ) : (
                       <View className="items-center">
                         <View className="w-14 h-14 bg-white/80 rounded-full items-center justify-center shadow-sm mb-2">
-                          <ImageIcon size={28} color="#0EA5E9" />
+                          <ImageIcon size={28} color="#FFC800" />
                         </View>
                         <Text className="text-base font-bold text-text">Add a Vibe Check</Text>
                         <Text className="text-sm text-muted">Tap to set trip cover</Text>
@@ -254,7 +285,7 @@ export default function MyTripsScreen() {
                     {selectedLocation ? (
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1">
-                          <MapPin size={24} color="#0EA5E9" className="mr-3" />
+                          <MapPin size={24} color="#1C1917" className="mr-3" />
                           <View>
                             <Text className="text-xl font-bold text-text tracking-tight">{selectedLocation.name}</Text>
                             <Text className="text-sm text-muted">{selectedLocation.city}</Text>
@@ -277,7 +308,7 @@ export default function MyTripsScreen() {
                           />
                         </View>
                         
-                        {isSearching && <Text className="text-sm text-[#0EA5E9] font-medium mt-3 ml-8">Searching Map...</Text>}
+                        {isSearching && <Text className="text-sm text-text font-medium mt-3 ml-8">Searching Map...</Text>}
                         
                         {results.length > 0 && (
                           <View className="mt-3 ml-8">
@@ -304,7 +335,7 @@ export default function MyTripsScreen() {
                       onPress={() => setShowStartPicker(true)}
                     >
                       <Text className="text-xs font-bold text-muted uppercase tracking-widest mb-1">From</Text>
-                      <Text className="text-lg font-black text-[#0EA5E9]">{startDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
+                      <Text className="text-lg font-black text-text">{startDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
@@ -312,7 +343,7 @@ export default function MyTripsScreen() {
                       onPress={() => setShowEndPicker(true)}
                     >
                       <Text className="text-xs font-bold text-muted uppercase tracking-widest mb-1">To</Text>
-                      <Text className="text-lg font-black text-[#0EA5E9]">{endDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
+                      <Text className="text-lg font-black text-text">{endDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -393,10 +424,10 @@ export default function MyTripsScreen() {
 
                   {/* Primary Action Button */}
                   <TouchableOpacity 
-                    className="bg-[#0EA5E9] py-4 rounded-2xl items-center shadow-sm"
+                    className="bg-[#FFC800] py-4 rounded-2xl items-center shadow-sm"
                     onPress={handleNext}
                   >
-                    <Text className="text-white font-bold text-base">Next: Add Members</Text>
+                    <Text className="text-[#1C1917] font-bold text-base">Next: Add Members</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -469,9 +500,24 @@ export default function MyTripsScreen() {
 
                   {/* Primary Action Button */}
                   <TouchableOpacity 
-                    className="bg-[#0EA5E9] py-4 rounded-2xl items-center shadow-sm"
+                    className="bg-[#FFC800] py-4 rounded-2xl items-center shadow-sm"
                     onPress={() => {
                        const newTripId = 't' + Date.now().toString();
+                       const ownerMember = {
+                         id: currentUser?.id || 'm1',
+                         name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Me',
+                         email: currentUser?.email,
+                         isMe: true,
+                         avatar: currentUser?.user_metadata?.avatar_url
+                       };
+
+                       const guestMembers = members.map((email, idx) => ({
+                         id: `guest-${idx}`,
+                         name: email.split('@')[0],
+                         email: email,
+                         isMe: false
+                       }));
+
                        addTrip({
                          id: newTripId,
                          title: tripTitle || 'Untitled Trip',
@@ -480,18 +526,19 @@ export default function MyTripsScreen() {
                          locationCity: selectedLocation?.city,
                          startDate: startDate.toISOString().split('T')[0],
                          endDate: endDate.toISOString().split('T')[0],
-                         ownerId: 'm1',
-                         members: [],
+                         ownerId: ownerMember.id,
+                         members: [ownerMember, ...guestMembers],
                          isPrivate: true
                        });
                        setModalVisible(false);
                        setStep(1);
                        setMembers([]);
                        setTripTitle('');
-                       router.push(`/trip/${newTripId}`);
+                       // Dừng router.push() để giữ nguyên màn hình My Trips
+                       // router.push(`/trip/${newTripId}`);
                     }}
                   >
-                    <Text className="text-white font-bold text-base">Create Adventure</Text>
+                    <Text className="text-[#1C1917] font-bold text-base">Create Adventure</Text>
                   </TouchableOpacity>
                 </>
               )}

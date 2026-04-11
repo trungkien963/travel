@@ -24,6 +24,7 @@ export default function AddMomentScreen() {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [isExpenseMode, setIsExpenseMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Location feature
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
@@ -47,7 +48,7 @@ export default function AddMomentScreen() {
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<any>(null);
 
-  const { trips, addExpense, addPost } = useTravelStore();
+  const { trips, addExpense, addPost, currentUserId, currentUserProfile } = useTravelStore();
 
   useEffect(() => {
     if (!cameraPermission?.granted) {
@@ -128,13 +129,20 @@ export default function AddMomentScreen() {
     }
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!selectedTripId) {
       Alert.alert("Error", "Please select a trip first.");
       return;
     }
+    
+    setIsSubmitting(true);
+    
+    // Simulate delicate network loading (API call)
+    await new Promise(resolve => setTimeout(resolve, 800));
+
     if (isExpenseMode) {
       if (!expenseAmount) {
+        setIsSubmitting(false);
         Alert.alert("Missing Amount", "Please enter valid amount to create an expense.");
         return;
       }
@@ -143,37 +151,47 @@ export default function AddMomentScreen() {
         tripId: selectedTripId,
         desc: content || 'Untitled Expense',
         amount: parseInt(expenseAmount.replace(/,/g, ''), 10) || 0,
-        payerId: 'm1', // Default to current user
+        payerId: currentUserId || 'm1',
         date: new Date().toISOString().split('T')[0],
         category: 'OTHER',
         splits: {}
       });
+      // Redirect to trip detail with Expenses Tab opened
+      router.replace({ pathname: '/trip/[id]', params: { id: selectedTripId, tab: 'EXPENSES' } });
     } else {
       if (!content && images.length === 0) {
+        setIsSubmitting(false);
         Alert.alert("Missing Input", "Add a photo or write something.");
         return;
       }
+      
+      const currentTrip = trips.find(t => t.id === selectedTripId);
+      const userMember = currentTrip?.members.find(m => m.id === currentUserId);
+      const postAuthorName = currentUserProfile?.name || userMember?.name || 'Traveler';
+      const postAuthorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
+      
       addPost({
         id: 'p' + Date.now().toString(),
         tripId: selectedTripId,
-        authorId: 'm1',
-        authorName: 'You (Edric)',
+        authorId: currentUserId || 'm1',
+        authorName: postAuthorName,
+        authorAvatar: postAuthorAvatar,
         content: content,
         images: images,
+        isDual: isDualMode,
         locationName: selectedLocation?.name,
         locationCity: selectedLocation?.city,
-        timestamp: 'Just now',
+        timestamp: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
         likes: 0,
         hasLiked: false,
         comments: []
       });
+      // Redirect to trip detail with Social Tab opened
+      router.replace({ pathname: '/trip/[id]', params: { id: selectedTripId, tab: 'SOCIAL' } });
     }
     
-    // Simulate successful save visually then go back
-    Alert.alert("Success", "Moment added successfully!", [
-       {text: "OK", onPress: () => router.back()}
-    ]);
+    setIsSubmitting(false);
   };
 
   return (
@@ -183,9 +201,14 @@ export default function AddMomentScreen() {
         {images.length > 0 ? (
           <View style={{ flex: 1 }}>
             <Image source={{ uri: images[0] }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
-            {images.length > 1 && (
+            {images.length === 2 && isDualMode && (
               <View style={[styles.pipContainer, { top: 100, left: 24 }]}>
                 <Image source={{ uri: images[1] }} style={styles.pipImage} />
+              </View>
+            )}
+            {images.length > 1 && !isDualMode && (
+              <View style={{position: 'absolute', bottom: 20, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 12}}>
+                 <Text style={{color: '#FFF', fontWeight: 'bold'}}>+{images.length - 1} more</Text>
               </View>
             )}
           </View>
@@ -407,14 +430,18 @@ export default function AddMomentScreen() {
           )}
 
         </ScrollView>
-
         {/* Sticky Confirm Button */}
         <View style={styles.stickyConfirmWrapper}>
           <TouchableOpacity 
             style={styles.stickyConfirmBtn}
             onPress={handlePost}
+            disabled={isSubmitting}
           >
-             <Check color="#1C1917" size={32} />
+            {isSubmitting ? (
+              <Text style={{ color: '#1C1917', fontSize: 13, fontWeight: '800' }}>Wait...</Text>
+            ) : (
+              <Check color="#1C1917" size={24} strokeWidth={3} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

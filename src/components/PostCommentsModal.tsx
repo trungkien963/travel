@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, Dimensions, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, Dimensions, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { X, Send } from 'lucide-react-native';
 import { Post } from '../types/social';
+import { formatRelativeTime } from '../lib/time';
 
 const { height } = Dimensions.get('window');
 
@@ -39,13 +40,17 @@ export function PostCommentsModal({ post, onClose, onAddComment }: PostCommentsM
               ) : (
                 post.comments.map(c => (
                   <View key={c.id} style={{flexDirection: 'row', gap: 12}}>
-                    <View style={{width: 36, height: 36, borderRadius: 18, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center'}}>
-                       <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 14}}>{c.authorName.charAt(0)}</Text>
+                    <View style={{width: 36, height: 36, borderRadius: 18, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'}}>
+                       {c.authorAvatar ? (
+                         <Image source={{ uri: c.authorAvatar }} style={{width: '100%', height: '100%'}} />
+                       ) : (
+                         <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 14}}>{c.authorName.charAt(0).toUpperCase()}</Text>
+                       )}
                     </View>
                     <View style={{flex: 1, backgroundColor: '#FBFBFB', padding: 14, borderRadius: 16}}>
                       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6}}>
                          <Text style={{fontSize: 14, fontWeight: '900', color: '#1C1917'}}>{c.authorName}</Text>
-                         <Text style={{fontSize: 11, fontWeight: '700', color: '#A8A29E'}}>{c.timestamp}</Text>
+                         <Text style={{fontSize: 11, fontWeight: '700', color: '#A8A29E'}}>{formatRelativeTime(c.timestamp)}</Text>
                       </View>
                       <Text style={{fontSize: 14, color: '#1C1917', lineHeight: 20}}>{c.text}</Text>
                     </View>

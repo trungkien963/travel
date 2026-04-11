@@ -11,7 +11,7 @@ const { height, width } = Dimensions.get('window');
 interface CreatePostModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (content: string, images: string[], expenseData?: Expense) => void;
+  onSave: (content: string, images: string[], expenseData?: Expense, isDual?: boolean) => void;
   currentUserName: string;
   initialPost?: Post | null;
   tripMembers: Member[];
@@ -147,7 +147,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
       };
     }
 
-    onSave(content.trim(), images, expenseData);
+    onSave(content.trim(), images, expenseData, isDualMode);
     onClose();
   };
 

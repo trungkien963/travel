@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Alert, Share, ActionSheetIOS, Platform } from 'react-native';
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react-native';
 import { Post } from '../types/social';
+import { formatRelativeTime } from '../lib/time';
 
 const { width } = Dimensions.get('window');
 
@@ -87,11 +88,15 @@ export function PostItem({ post, isOwner, currentUserId, onLike, onComment, onDe
       <View style={styles.headerRow}>
         <View style={styles.authorInfo}>
           <View style={styles.avatarCircle}>
-             <Text style={styles.avatarText}>{post.authorName.charAt(0)}</Text>
+             {post.authorAvatar ? (
+                <Image source={{ uri: post.authorAvatar }} style={{width: 36, height: 36, borderRadius: 18}} />
+             ) : (
+                <Text style={styles.avatarText}>{post.authorName.charAt(0).toUpperCase()}</Text>
+             )}
           </View>
           <View>
             <Text style={styles.authorName}>{post.authorName}</Text>
-            <Text style={styles.timestamp}>{post.timestamp}</Text>
+            <Text style={styles.timestamp}>{formatRelativeTime(post.timestamp)}</Text>
           </View>
         </View>
         <TouchableOpacity onPress={handleMorePress} style={styles.moreBtn}>
@@ -102,25 +107,36 @@ export function PostItem({ post, isOwner, currentUserId, onLike, onComment, onDe
       {/* Image Block */}
       {post.images && post.images.length > 0 && (
         <View style={styles.imageBlock}>
-          <ScrollView 
-            horizontal 
-            pagingEnabled 
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleScroll}
-            scrollEventThrottle={16}
-          >
-            {post.images.map((uri, index) => (
-              <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />
-            ))}
-          </ScrollView>
-          
-          {/* Pagination Dots Floating on bottom of image */}
-          {hasMultipleImages && (
-            <View style={styles.paginationRow}>
-              {post.images.map((_, idx) => (
-                <View key={idx} style={[styles.dot, activeIndex === idx ? styles.activeDot : styles.inactiveDot]} />
-              ))}
+          {post.isDual && post.images.length === 2 ? (
+            <View style={{ flex: 1, width: '100%', height: '100%' }}>
+              <Image source={{ uri: post.images[0] }} style={{ width: '100%', height: '100%', position: 'absolute' }} resizeMode="cover" />
+              <View style={styles.pipContainer}>
+                <Image source={{ uri: post.images[1] }} style={styles.pipImage} resizeMode="cover" />
+              </View>
             </View>
+          ) : (
+            <>
+              <ScrollView 
+                horizontal 
+                pagingEnabled 
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={handleScroll}
+                scrollEventThrottle={16}
+              >
+                {post.images.map((uri, index) => (
+                  <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />
+                ))}
+              </ScrollView>
+              
+              {/* Pagination Dots Floating on bottom of image */}
+              {hasMultipleImages && (
+                <View style={styles.paginationRow}>
+                  {post.images.map((_, idx) => (
+                    <View key={idx} style={[styles.dot, activeIndex === idx ? styles.activeDot : styles.inactiveDot]} />
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
       )}
@@ -128,13 +144,11 @@ export function PostItem({ post, isOwner, currentUserId, onLike, onComment, onDe
       {/* Interactions (Below Image) */}
       <View style={styles.interactionsRow}>
         <TouchableOpacity onPress={() => onLike(post.id)} style={styles.iconHitbox}>
-            <Heart size={24} color={post.hasLiked ? '#EF4444' : '#1C1917'} fill={post.hasLiked ? '#EF4444' : 'transparent'} />
-            {post.likes > 0 && <Text style={[styles.countText, post.hasLiked && {color: '#EF4444'}]}>{post.likes}</Text>}
+            <Heart size={26} color={post.hasLiked ? '#EF4444' : '#1C1917'} fill={post.hasLiked ? '#EF4444' : 'transparent'} />
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => onComment(post)} style={styles.iconHitbox}>
-            <MessageCircle size={24} color="#1C1917" />
-            {post.comments.length > 0 && <Text style={styles.countText}>{post.comments.length}</Text>}
+            <MessageCircle size={26} color="#1C1917" />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleShare} style={[styles.iconHitbox, {marginLeft: 'auto', paddingRight: 0}]}>
@@ -142,12 +156,37 @@ export function PostItem({ post, isOwner, currentUserId, onLike, onComment, onDe
         </TouchableOpacity>
       </View>
 
+      {/* Likes Summary */}
+      {post.likes > 0 && (
+        <Text style={styles.likesSummaryText}>
+          {post.hasLiked 
+            ? (post.likes === 1 ? 'Liked by You' : `Liked by You and ${(post.likes - 1).toLocaleString()} others`)
+            : `${post.likes.toLocaleString()} likes`}
+        </Text>
+      )}
+
       {/* Caption Content */}
       {post.content ? (
         <View style={styles.captionContainer}>
           <Text style={styles.captionAuthor}>{post.authorName} <Text style={styles.captionText}>{post.content}</Text></Text>
         </View>
       ) : null}
+
+      {/* Comments Summary */}
+      {post.comments.length > 0 && (
+        <View style={{ marginTop: 6 }}>
+          <TouchableOpacity onPress={() => onComment(post)}>
+            <Text style={styles.viewCommentsText}>
+              {post.comments.length > 1 ? `View all ${post.comments.length} comments` : `View 1 comment`}
+            </Text>
+          </TouchableOpacity>
+          <View style={{ marginTop: 4 }}>
+            <Text style={styles.captionAuthor} numberOfLines={1}>
+              {post.comments[post.comments.length - 1].authorName} <Text style={styles.captionText}>{post.comments[post.comments.length - 1].text}</Text>
+            </Text>
+          </View>
+        </View>
+      )}
 
     </View>
   );
@@ -193,6 +232,25 @@ const styles = StyleSheet.create({
     width: width - 48, // Padding of container is 24 on each side
     height: '100%',
   },
+  pipContainer: { 
+    position: 'absolute', 
+    top: 16, 
+    left: 16, 
+    width: 90, 
+    height: 120, 
+    borderRadius: 16, 
+    overflow: 'hidden', 
+    borderWidth: 2, 
+    borderColor: '#FFF', 
+    shadowColor: '#000', 
+    shadowOffset: {width: 0, height: 4}, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 6 
+  },
+  pipImage: { 
+    width: '100%', 
+    height: '100%' 
+  },
 
   paginationRow: {
     position: 'absolute',
@@ -227,7 +285,7 @@ const styles = StyleSheet.create({
   },
 
   captionContainer: {
-    marginTop: 4,
+    marginTop: 6,
   },
   captionAuthor: {
     fontSize: 14,
@@ -237,5 +295,17 @@ const styles = StyleSheet.create({
   },
   captionText: {
     fontWeight: '400',
+  },
+  likesSummaryText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1C1917',
+    marginTop: 2,
+  },
+  viewCommentsText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#A8A29E',
+    marginTop: 2,
   }
 });

@@ -27,7 +27,7 @@ export default function AuthScreen() {
       Alert.alert('Sign In Failed', error.message);
       setLoading(false);
     } else {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/discover');
     }
   }
 
@@ -46,7 +46,7 @@ export default function AuthScreen() {
     } else if (!session) {
       Alert.alert('Check your inbox', 'Please check your inbox for email verification!');
     } else {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/discover');
     }
     setLoading(false);
   }
@@ -84,17 +84,17 @@ export default function AuthScreen() {
         if (code) {
           const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
           if (sessionError) throw sessionError;
-          router.replace('/(tabs)');
+          router.replace('/(tabs)/discover');
         } else {
           const access_token = getParam(result.url, 'access_token');
           const refresh_token = getParam(result.url, 'refresh_token');
           if (access_token && refresh_token) {
             const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
             if (sessionError) throw sessionError;
-            router.replace('/(tabs)');
+            router.replace('/(tabs)/discover');
           } else {
            // Fallback nếu không có param nào, có thể AppState của Supabase sẽ tự lo
-           router.replace('/(tabs)');
+           router.replace('/(tabs)/discover');
           }
         }
       }
