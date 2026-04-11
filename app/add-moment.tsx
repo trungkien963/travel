@@ -51,6 +51,7 @@ export default function AddMomentScreen() {
   const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const { trips, addExpense, addPost, currentUserId, currentUserProfile } = useTravelStore();
 
@@ -216,8 +217,10 @@ export default function AddMomentScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
+    <>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+      <ScrollView ref={scrollViewRef} bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
       <View style={styles.cameraSection}>
         {isFlipping && (
           <View style={{...StyleSheet.absoluteFillObject, backgroundColor: '#FFF', zIndex: 999, justifyContent: 'center', alignItems: 'center'}}>
@@ -303,8 +306,7 @@ export default function AddMomentScreen() {
       </View>
 
       {/* BOTTOM FORM SECTION */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <View style={{ padding: 24 }}>
           {images.length > 0 && !isDualMode && (
              <View style={{ marginBottom: 24 }}>
                <Text style={{ color: '#8C8C8C', fontSize: 12, fontWeight: '800', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Selected Photos ({images.length})</Text>
@@ -399,6 +401,7 @@ export default function AddMomentScreen() {
                multiline
                value={content}
                onChangeText={setContent}
+               onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
              />
           </View>
 
@@ -425,6 +428,7 @@ export default function AddMomentScreen() {
                       placeholderTextColor="#D0D0D0"
                       value={query}
                       onChangeText={setQuery}
+                      onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
                     />
                   </View>
                   
@@ -460,6 +464,7 @@ export default function AddMomentScreen() {
                     placeholderTextColor="rgba(255,255,255,0.2)"
                     value={formatCurrency(expenseAmount)} 
                     onChangeText={(v) => setExpenseAmount(v.replace(/[^0-9]/g, ''))} 
+                    onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
                   />
                </View>
 
@@ -496,7 +501,7 @@ export default function AddMomentScreen() {
             </View>
           )}
 
-        </ScrollView>
+        </View>
         {/* Sticky Confirm Button */}
         <View style={styles.stickyConfirmWrapper}>
           <TouchableOpacity 
@@ -511,7 +516,8 @@ export default function AddMomentScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
+    </KeyboardAvoidingView>
 
       {/* FULLSCREEN IMAGE VIEWER MODAL */}
       <Modal visible={viewingImageIndex !== null} transparent={true} animationType="fade" onRequestClose={() => setViewingImageIndex(null)}>
@@ -544,14 +550,13 @@ export default function AddMomentScreen() {
             </SafeAreaView>
          </View>
       </Modal>
-
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1C1917' },
-  cameraSection: { height: '55%', width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' },
+  cameraSection: { height: height * 0.55, width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' },
   noCameraView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1C1917' },
   cameraOverlayDarken: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.1)' },
   topControls: { position: 'absolute', top: 0, width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10 },

@@ -45,6 +45,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
   const [isCapturing, setIsCapturing] = useState(false);
   
   const cameraRef = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   React.useEffect(() => {
     if (visible) {
@@ -176,9 +177,10 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: '#1C1917' }}>
-        {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
-        <View style={{ height: '55%', width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#1C1917' }}>
+        <ScrollView ref={scrollViewRef} bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
+          <View style={{ height: height * 0.55, width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' }}>
           
           {isFlipping && (
             <View style={{...StyleSheet.absoluteFillObject, backgroundColor: '#FFF', zIndex: 999, justifyContent: 'center', alignItems: 'center'}}>
@@ -260,8 +262,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
         </View>
 
         {/* BOTTOM FORM SECTION */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <View style={{ padding: 24 }}>
           {images.length > 0 && !isDualMode && (
              <View style={{ marginBottom: 24 }}>
                <Text style={{ color: '#8C8C8C', fontSize: 12, fontWeight: '800', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Selected Photos ({images.length})</Text>
@@ -317,6 +318,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
                  multiline
                  value={content}
                  onChangeText={setContent}
+                 onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
                />
             </View>
 
@@ -332,6 +334,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
                       placeholderTextColor="rgba(255,255,255,0.2)"
                       value={formatCurrency(expenseAmount)} 
                       onChangeText={(v) => setExpenseAmount(v.replace(/[^0-9]/g, ''))} 
+                      onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
                     />
                  </View>
 
@@ -369,7 +372,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
             )}
 
             <View style={{ height: 60 }} />
-          </ScrollView>
+          </View>
 
           {/* Sticky Confirm Button */}
           <View style={{ position: 'absolute', bottom: 30, right: 24 }}>
@@ -380,8 +383,8 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
                <Check color="#1C1917" size={32} />
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* FULLSCREEN IMAGE VIEWER MODAL */}
       <Modal visible={viewingImageIndex !== null} transparent={true} animationType="fade" onRequestClose={() => setViewingImageIndex(null)}>
