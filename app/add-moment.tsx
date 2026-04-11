@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert, Image, SafeAreaView, ScrollView, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { X, Image as ImageIcon, RefreshCcw, Zap, ChevronDown, Check, Receipt, CheckCircle2, Circle, MapPin, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -218,6 +218,7 @@ export default function AddMomentScreen() {
 
   return (
     <>
+    <Stack.Screen options={{ headerShown: false }} />
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <ScrollView ref={scrollViewRef} bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
@@ -254,9 +255,16 @@ export default function AddMomentScreen() {
         {/* Top Controls Overlay */}
         <SafeAreaView style={styles.topControls}>
           <TouchableOpacity onPress={() => {
-              if (isAddingMore) setIsAddingMore(false);
-              else if (images.length > 0) setImages([]); 
-              else router.back();
+              if (isAddingMore) {
+                setIsAddingMore(false);
+              } else if (images.length > 0 || content) {
+                Alert.alert("Discard Moment?", "If you go back, your edits will be lost.", [
+                  { text: "Keep Editing", style: "cancel" },
+                  { text: "Discard", style: "destructive", onPress: () => router.back() }
+                ]);
+              } else {
+                router.back();
+              }
             }} style={styles.iconCircle}>
             <X size={24} color="#FFF" />
           </TouchableOpacity>
@@ -339,14 +347,14 @@ export default function AddMomentScreen() {
              </View>
           )}
           
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-             <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900' }}>Add Details</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, marginTop: 12 }}>
+             <Text style={{ color: '#1C1917', fontSize: 28, fontWeight: '900' }}>Add Details</Text>
              <TouchableOpacity 
                style={[styles.expenseToggleBtn, isExpenseMode && {backgroundColor: '#F59E0B'}]} 
                onPress={() => setIsExpenseMode(!isExpenseMode)}
              >
-               <Receipt size={16} color={isExpenseMode ? '#000' : '#FFF'} />
-               <Text style={{color: isExpenseMode ? '#000' : '#FFF', fontWeight: '800', fontSize: 12}}>
+               <Receipt size={16} color={isExpenseMode ? '#000' : '#1C1917'} />
+               <Text style={{color: isExpenseMode ? '#000' : '#1C1917', fontWeight: '800', fontSize: 12}}>
                  {isExpenseMode ? 'EXPENSE ON' : '+ BILL'}
                </Text>
              </TouchableOpacity>
@@ -392,7 +400,7 @@ export default function AddMomentScreen() {
           )}
 
           {/* Content Input */}
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 32, padding: 20, marginBottom: 16 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, marginBottom: 16 }}>
              <Text style={[styles.fieldLabel, { color: '#8C8C8C' }]}>What was this for?</Text>
              <TextInput
                style={{ fontSize: 18, fontWeight: '600', color: '#1C1917', minHeight: 40 }}
@@ -406,7 +414,7 @@ export default function AddMomentScreen() {
           </View>
 
           {/* Location Search Input (Free Nominatim API) */}
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 32, padding: 20, marginBottom: 16 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, marginBottom: 16 }}>
              <Text style={[styles.fieldLabel, { color: '#8C8C8C' }]}>Location (Tag)</Text>
              {selectedLocation ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
@@ -453,15 +461,15 @@ export default function AddMomentScreen() {
           </View>
 
           {isExpenseMode && (
-            <View style={{ backgroundColor: '#292524', borderRadius: 32, padding: 20, marginBottom: 16 }}>
-               <Text style={[styles.fieldLabel, {color: '#A8A29E'}]}>Total Price</Text>
+            <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, marginBottom: 16 }}>
+               <Text style={[styles.fieldLabel, {color: '#8C8C8C'}]}>Total Price</Text>
                <View style={styles.amountInputRow}>
                   <Text style={styles.currencySymbol}>₫</Text>
                   <TextInput 
                     style={styles.amountInput}
                     keyboardType="numeric" 
                     placeholder="0"
-                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholderTextColor="#D0D0D0"
                     value={formatCurrency(expenseAmount)} 
                     onChangeText={(v) => setExpenseAmount(v.replace(/[^0-9]/g, ''))} 
                     onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
@@ -555,7 +563,7 @@ export default function AddMomentScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1917' },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
   cameraSection: { height: height * 0.55, width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' },
   noCameraView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1C1917' },
   cameraOverlayDarken: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.1)' },
@@ -572,33 +580,33 @@ const styles = StyleSheet.create({
   retakeText: { color: '#FFF', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   flashBadge: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
 
-  expenseToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100 },
-  fieldLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12, color: '#A8A29E', textTransform: 'uppercase' },
+  expenseToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E5E5E5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100 },
+  fieldLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12, color: '#8C8C8C', textTransform: 'uppercase' },
   
-  tripSelectorBtn: { backgroundColor: '#292524', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 24, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  tripSelectorBtn: { backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 24, marginBottom: 12, borderWidth: 1, borderColor: '#F0F0F0' },
   tripIconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,200,0,0.1)', justifyContent: 'center', alignItems: 'center' },
-  tripSelectorTitle: { color: '#FFF', fontSize: 16, fontWeight: '800', marginBottom: 2 },
-  tripSelectorSubtitle: { color: '#A8A29E', fontSize: 12, fontWeight: '600' },
-  tripDropdown: { backgroundColor: '#292524', borderRadius: 24, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  tripDropdownItem: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.02)' },
-  tripDropdownTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  tripDropdownDates: { color: '#A8A29E', fontSize: 12, fontWeight: '600' },
+  tripSelectorTitle: { color: '#1C1917', fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  tripSelectorSubtitle: { color: '#8C8C8C', fontSize: 12, fontWeight: '600' },
+  tripDropdown: { backgroundColor: '#FFFFFF', borderRadius: 24, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: '#F0F0F0' },
+  tripDropdownItem: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  tripDropdownTitle: { color: '#1C1917', fontSize: 15, fontWeight: '700' },
+  tripDropdownDates: { color: '#8C8C8C', fontSize: 12, fontWeight: '600' },
 
-  amountInputRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 12, marginBottom: 20 },
+  amountInputRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 12, marginBottom: 20 },
   currencySymbol: { fontSize: 24, fontWeight: '900', color: '#F59E0B', marginRight: 8 },
-  amountInput: { flex: 1, fontSize: 32, fontWeight: '900', color: '#FFF' },
+  amountInput: { flex: 1, fontSize: 32, fontWeight: '900', color: '#1C1917' },
   
-  paidByActivePill: { backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
-  paidByActiveText: { color: '#000', fontSize: 13, fontWeight: '800' },
-  paidByInactivePill: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
-  paidByInactiveText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  paidByActivePill: { backgroundColor: '#1C1917', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
+  paidByActiveText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  paidByInactivePill: { backgroundColor: '#F5F5F5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
+  paidByInactiveText: { color: '#8C8C8C', fontSize: 13, fontWeight: '800' },
   
   membersList: { gap: 12 },
-  splitUserRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FFC800' },
-  splitUserRowDisabled: { borderColor: 'transparent' },
+  splitUserRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FFC800' },
+  splitUserRowDisabled: { borderColor: '#F0F0F0' },
   checkCircleActive: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#F59E0B', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  checkCircleInactive: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: 'rgba(255,255,255,0.1)' },
-  splitUserName: { fontSize: 15, fontWeight: '800', color: '#FFF' },
+  checkCircleInactive: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: '#F5F5F5' },
+  splitUserName: { fontSize: 15, fontWeight: '800', color: '#1C1917' },
   splitUserAmount: { fontSize: 16, fontWeight: '900', color: '#FDE047', textAlign: 'right' },
 
   stickyConfirmWrapper: { position: 'absolute', bottom: 30, right: 24 },

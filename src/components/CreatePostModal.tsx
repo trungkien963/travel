@@ -177,7 +177,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#1C1917' }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
         <ScrollView ref={scrollViewRef} bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* TOP CAMERA / IMAGE SECTION (Split Screen) */}
           <View style={{ height: height * 0.55, width: '100%', borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden', backgroundColor: '#000', position: 'relative' }}>
@@ -214,9 +214,16 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
           {/* Top Controls Overlay */}
           <SafeAreaView style={{ position: 'absolute', top: 0, width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10 }}>
             <TouchableOpacity onPress={() => {
-                if (isAddingMore) setIsAddingMore(false);
-                else if (images.length > 0) setImages([]); 
-                else onClose();
+                if (isAddingMore) {
+                  setIsAddingMore(false);
+                } else if (images.length > 0 || content) {
+                  Alert.alert("Discard Post?", "If you close this, your edits will be lost.", [
+                    { text: "Keep Editing", style: "cancel" },
+                    { text: "Discard", style: "destructive", onPress: () => onClose() }
+                  ]);
+                } else {
+                  onClose();
+                }
               }} style={styles.iconCircle}>
               <X size={24} color="#FFF" />
             </TouchableOpacity>
@@ -296,13 +303,13 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
           )}
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-               <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900' }}>Add Details</Text>
+               <Text style={{ color: '#1C1917', fontSize: 28, fontWeight: '900' }}>Add Details</Text>
                <TouchableOpacity 
                  style={[styles.expenseToggleBtn, isExpenseMode && {backgroundColor: '#F59E0B'}]} 
                  onPress={() => setIsExpenseMode(!isExpenseMode)}
                >
-                 <Receipt size={16} color={isExpenseMode ? '#000' : '#FFF'} />
-                 <Text style={{color: isExpenseMode ? '#000' : '#FFF', fontWeight: '800', fontSize: 12}}>
+                 <Receipt size={16} color={isExpenseMode ? '#000' : '#1C1917'} />
+                 <Text style={{color: isExpenseMode ? '#000' : '#1C1917', fontWeight: '800', fontSize: 12}}>
                    {isExpenseMode ? 'EXPENSE ON' : '+ BILL'}
                  </Text>
                </TouchableOpacity>
@@ -323,22 +330,22 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
             </View>
 
             {isExpenseMode && (
-              <View style={{ backgroundColor: '#292524', borderRadius: 32, padding: 20, marginBottom: 16 }}>
-                 <Text style={{ color: '#A8A29E', fontSize: 12, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Total Price</Text>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 12, marginBottom: 20 }}>
+              <View style={{ backgroundColor: '#FFFFFF', borderRadius: 32, padding: 20, marginBottom: 16 }}>
+                 <Text style={{ color: '#8C8C8C', fontSize: 12, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Total Price</Text>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 12, marginBottom: 20 }}>
                     <Text style={{ fontSize: 24, fontWeight: '900', color: '#F59E0B', marginRight: 8 }}>₫</Text>
                     <TextInput 
-                      style={{ flex: 1, fontSize: 32, fontWeight: '900', color: '#FFF' }}
+                      style={{ flex: 1, fontSize: 32, fontWeight: '900', color: '#1C1917' }}
                       keyboardType="numeric" 
                       placeholder="0"
-                      placeholderTextColor="rgba(255,255,255,0.2)"
+                      placeholderTextColor="#D0D0D0"
                       value={formatCurrency(expenseAmount)} 
                       onChangeText={(v) => setExpenseAmount(v.replace(/[^0-9]/g, ''))} 
                       onFocus={() => scrollViewRef.current?.scrollTo({ y: height * 0.55, animated: true })}
                     />
                  </View>
 
-                 <Text style={[styles.fieldLabel, { color: '#A8A29E' }]}>PAID BY</Text>
+                 <Text style={[styles.fieldLabel, { color: '#8C8C8C' }]}>PAID BY</Text>
                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
                     {tripMembers.map(member => (
                       <TouchableOpacity 
@@ -351,7 +358,7 @@ export function CreatePostModal({ visible, onClose, onSave, currentUserName, ini
                     ))}
                  </ScrollView>
 
-                 <Text style={[styles.fieldLabel, { color: '#A8A29E' }]}>SPLIT EQUALLY</Text>
+                 <Text style={[styles.fieldLabel, { color: '#8C8C8C' }]}>SPLIT EQUALLY</Text>
                  <View style={styles.membersList}>
                    {tripMembers.map(member => {
                      const isIncluded = includedMembers[member.id];
@@ -427,17 +434,17 @@ const styles = StyleSheet.create({
   iconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   pipContainer: { position: 'absolute', width: 90, height: 120, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: '#FFF', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 8 },
   pipImage: { width: '100%', height: '100%' },
-  expenseToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100 },
-  fieldLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
-  paidByActivePill: { backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
-  paidByActiveText: { color: '#000', fontSize: 13, fontWeight: '800' },
-  paidByInactivePill: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
-  paidByInactiveText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  expenseToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E5E5E5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100 },
+  fieldLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' },
+  paidByActivePill: { backgroundColor: '#1C1917', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
+  paidByActiveText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  paidByInactivePill: { backgroundColor: '#F5F5F5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, marginRight: 8 },
+  paidByInactiveText: { color: '#8C8C8C', fontSize: 13, fontWeight: '800' },
   membersList: { gap: 12 },
-  splitUserRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FFC800' },
-  splitUserRowDisabled: { borderColor: 'transparent' },
+  splitUserRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FFC800' },
+  splitUserRowDisabled: { borderColor: '#F0F0F0' },
   checkCircleActive: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#F59E0B', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  checkCircleInactive: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: 'rgba(255,255,255,0.1)' },
-  splitUserName: { fontSize: 15, fontWeight: '800', color: '#FFF' },
+  checkCircleInactive: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: '#F5F5F5' },
+  splitUserName: { fontSize: 15, fontWeight: '800', color: '#1C1917' },
   splitUserAmount: { fontSize: 16, fontWeight: '900', color: '#FDE047', textAlign: 'right' },
 });
