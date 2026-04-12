@@ -55,13 +55,18 @@ export function useExpenses(tripId?: string) {
         const actorName = currentUserProfile?.name || userMember?.name || 'Traveler';
         const actorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
 
+        const getValidUuid = (id?: string) => {
+          if (!id) return null;
+          return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
+        };
+
         const { data, error } = await supabase.from('expenses').insert({
           trip_id: tripId,
-          payer_id: currentUserId,
+          payer_id: getValidUuid(expense.payerId) || getValidUuid(currentUserId),
           amount: expense.amount,
           description: expense.desc,
           category: expense.category || 'OTHER',
-          splits: expense.splits || {},
+          splits: { ...(expense.splits || {}), _meta_payer_id: expense.payerId },
           receipt_urls: uploadedReceipts
         }).select().single();
         

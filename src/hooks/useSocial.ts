@@ -97,9 +97,14 @@ export function useSocial(tripId?: string) {
       const userMember = trip?.members.find(m => m.id === authorId);
       const authorAvatar = currentUserProfile?.avatar || userMember?.avatar || undefined;
 
+      const getValidUuid = (id?: string) => {
+        if (!id) return null;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
+      };
+
       const { data, error } = await supabase.from('posts').insert({
         trip_id: targetTripId || tripId,
-        user_id: currentUserId,
+        user_id: getValidUuid(authorId) || getValidUuid(currentUserId),
         content: content,
         image_urls: uploadedImages,
         is_dual_camera: isDual || false,

@@ -543,16 +543,33 @@ export default function MyTripsScreen() {
                          avatar: authUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.avatar_url
                        };
 
-                       const guestMembers = members.map((email, idx) => ({
-                         id: `guest-${idx}`,
-                         name: email.split('@')[0],
-                         email: email,
-                         isMe: false
+                       const guestMembers = await Promise.all(members.map(async (email) => {
+                         let finalUserId = `guest-${Date.now()}`; // Rất khó xảy ra lỗi, nhưng fallback tạm nếu Edge Function sập
+                         try {
+                           const { data, error } = await supabase.functions.invoke('invite-member', {
+                             body: { email }
+                           });
+                           if (!error && data?.userId) {
+                             finalUserId = data.userId;
+                           } else {
+                             console.error("Invite Edge Function failed:", error);
+                           }
+                         } catch (err) {
+                           console.error("Failed to invoke invite-member:", err);
+                         }
+
+                         return {
+                           id: finalUserId,
+                           name: email.split('@')[0],
+                           email: email,
+                           isMe: false
+                         };
                        }));
 
                        const { setGlobalLoading } = useTravelStore.getState();
                        setGlobalLoading(true);
                        try {
+                         console.log("PAYLOAD MEMBERS TO INSERT:", [ownerMember, ...guestMembers]);
                          const { data, error } = await supabase.from('trips').insert({
                            title: tripTitle || 'Untitled Trip',
                            cover_image: finalCoverUrl,
@@ -566,6 +583,7 @@ export default function MyTripsScreen() {
                          }).select().single();
                          
                          if (error) throw error;
+                         console.log("DATA.MEMBERS AFTER INSERT:", data.members);
 
                          addTrip({
                            id: data.id,
@@ -576,7 +594,7 @@ export default function MyTripsScreen() {
                            startDate: data.start_date,
                            endDate: data.end_date,
                            ownerId: data.owner_id,
-                           members: data.members,
+                           members: typeof data.members === 'string' ? JSON.parse(data.members) : (data.members || []),
                            isPrivate: data.is_private
                          });
                          

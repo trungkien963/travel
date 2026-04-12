@@ -3,6 +3,7 @@ import { Trip } from '../types/trip';
 import { Expense } from '../types/expense';
 import { Post } from '../types/social';
 import { AppNotification } from '../types/notification';
+import { Alert } from 'react-native';
 
 import { supabase } from '../lib/supabase';
 import * as Notifications from 'expo-notifications';
@@ -309,26 +310,8 @@ export const useTravelStore = create<TravelState>()(
              get().setupRealtimeNotifications();
           }
 
-          const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*');
-          if (!tripsError && tripsData && tripsData.length > 0) {
-            // Transform snake_case from DB back to camelCase for UI
-            const formattedTrips = tripsData.map(t => {
-              return {
-                id: t.id,
-                title: t.title,
-                locationName: t.location_name,
-                locationCity: t.location_city,
-                coverImage: t.cover_image,
-                startDate: t.start_date,
-                endDate: t.end_date,
-                ownerId: t.owner_id || get().currentUserId,
-                isPrivate: t.is_private,
-                members: [],
-              };
-            });
-            
-            set({ trips: formattedTrips });
-          }
+          // Fetch everything using the complete mapping logic
+          await get().refreshData();
         } catch (err) {
           console.error("Supabase sync failed", err);
         } finally {
@@ -351,10 +334,9 @@ export const useTravelStore = create<TravelState>()(
                 endDate: t.end_date,
                 ownerId: t.owner_id || get().currentUserId,
                 isPrivate: t.is_private,
-                members: t.members && Array.isArray(t.members) ? t.members : [], // Now reads from DB JSONB
+                members: typeof t.members === 'string' ? JSON.parse(t.members) : (t.members && Array.isArray(t.members) ? t.members : []),
               };
             });
-            
             const { data: postsData, error: postsError } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
           let formattedPosts = [] as any[];
           
@@ -386,7 +368,7 @@ export const useTravelStore = create<TravelState>()(
               amount: e.amount,
               desc: e.description || '',
               date: e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-              payerId: e.payer_id || 'Traveler',
+              payerId: e.payer_id || (e.splits?._meta_payer_id) || 'Traveler',
               category: e.category || 'OTHER',
               splits: e.splits || {}, // Now reads from DB JSONB
               receipts: e.receipt_urls || []

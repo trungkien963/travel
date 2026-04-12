@@ -51,7 +51,12 @@ export default function ProfileScreen() {
         }
       >
           
-          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity onPress={handleSignOut} style={styles.headerSignOut}>
+              <LogOut size={20} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
 
           {/* User Identity Card */}
           <View style={styles.profileCard}>
@@ -120,22 +125,6 @@ export default function ProfileScreen() {
              </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-            <LogOut size={20} color="#EF4444" />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-
-          {/* Dev/Temp clear state to wipe persisted mock data */}
-          <TouchableOpacity 
-             style={[styles.signOutBtn, { marginTop: 16, borderTopWidth: 0, justifyContent: 'center' }]} 
-             onPress={() => {
-                useTravelStore.setState({ trips: [], expenses: [], posts: [], notifications: [] });
-                alert('App data cache cleared! Go back to My Trips.');
-             }}
-          >
-            <Text style={[styles.signOutText, { color: '#A8A29E', fontSize: 13, textDecorationLine: 'underline' }]}>Developer: Reset App Data</Text>
-          </TouchableOpacity>
-
       </ScrollView>
     </View>
   );
@@ -151,12 +140,25 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 120,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
   headerTitle: {
     fontSize: 32,
     fontWeight: '800', 
     color: '#1C1917', 
     letterSpacing: -0.5,
-    marginBottom: 32,
+  },
+  headerSignOut: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
   profileCard: {

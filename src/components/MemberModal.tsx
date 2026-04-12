@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Member } from '../types/expense';
@@ -17,6 +18,7 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -32,21 +34,44 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
     }
   }, [visible, initialMember]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Missing Name', 'Please enter a name for the member.');
       return;
     }
+    if (!email.trim() || !email.includes('@')) {
+      Alert.alert('Missing or Invalid Email', 'An email address is strictly required to invite members to the trip.');
+      return;
+    }
     
+    setIsSaving(true);
+    let finalId = initialMember?.id || 'm' + Date.now().toString();
+
+    // Invite member using Edge Function
+    if (!initialMember) {
+      try {
+        const { data, error } = await supabase.functions.invoke('invite-member', {
+          body: { email: email.trim() }
+        });
+        if (!error && data?.userId) {
+          finalId = data.userId;
+        } else {
+          console.error("Invite Edge Function failed:", error);
+        }
+      } catch (err) {
+        console.error("Failed to invoke invite-member:", err);
+      }
+    }
+
     onSave({
-      id: initialMember?.id || 'm' + Date.now().toString(),
+      id: finalId,
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
       isMe: initialMember?.isMe, // Preserve if editing the Host themselves
     });
     
-    // Close & reset handled by parent / effect
+    setIsSaving(false);
   };
 
   const filteredFriends: any[] = [];
@@ -92,7 +117,7 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
               </View>
             )}
 
-            <Text style={styles.fieldLabel}>EMAIL ADDRESS (OPTIONAL)</Text>
+            <Text style={styles.fieldLabel}>EMAIL ADDRESS *</Text>
             <TextInput 
               style={styles.textInput} 
               placeholder="e.g. john@example.com" 
@@ -103,8 +128,8 @@ export function MemberModal({ visible, onClose, onSave, initialMember }: MemberM
               onChangeText={setEmail} 
             />
 
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>{initialMember ? 'Save Changes' : 'Add Member'}</Text>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+              <Text style={styles.saveBtnText}>{isSaving ? 'Inviting...' : (initialMember ? 'Save Changes' : 'Add Member')}</Text>
             </TouchableOpacity>
 
           </View>

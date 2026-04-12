@@ -266,7 +266,6 @@ CREATE OR REPLACE FUNCTION public.toggle_post_like(p_post_id uuid, p_user_id tex
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
-BEGIN
   IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND p_user_id = ANY(likes)) THEN
     UPDATE public.posts SET likes = array_remove(likes, p_user_id) WHERE id = p_post_id;
   ELSE
@@ -392,8 +391,7 @@ DECLARE
 BEGIN
     action_user_id := auth.uid(); -- Lấy ID của người đang chọt Like/Comment
 
-    -- Trường hợp 1: Có người rớt Tym (NEW.likes > OLD.likes)
-    IF NEW.likes > COALESCE(OLD.likes, 0) THEN
+    IF COALESCE(array_length(NEW.likes, 1), 0) > COALESCE(array_length(OLD.likes, 1), 0) THEN
         SELECT full_name, avatar_url INTO actor_name, actor_avatar FROM public.users WHERE id = action_user_id;
         
         -- Chỉ gửi nếu người thả tym không phải chủ bài đăng

@@ -287,7 +287,7 @@ export default function TripDetailsScreen() {
              <Text style={styles.title}>{trip?.title}</Text>
              <View style={styles.metaRow}>
                <View style={styles.metaItem}><CalendarIcon size={14} color="#A8A29E" /><Text style={styles.metaText}>{trip?.startDate} - {trip?.endDate}</Text></View>
-               <View style={styles.metaItem}><Users size={14} color="#A8A29E" /><Text style={styles.metaText}>{trip?.members.length || 0} members</Text></View>
+               <View style={styles.metaItem}><Users size={14} color="#A8A29E" /><Text style={styles.metaText}>{trip?.members?.length || 0} members</Text></View>
              </View>
           </View>
 
@@ -573,7 +573,7 @@ export default function TripDetailsScreen() {
                                  </View>
                                )}
                              </View>
-                             <Text style={styles.expenseItemDate}>{member.isMe ? 'You' : 'Member'}</Text>
+                             <Text style={styles.expenseItemDate}>{member.id === currentUserId ? 'You' : 'Member'}</Text>
                            </View>
                          </View>
 

@@ -10,13 +10,13 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-  }),
+  } as any),
 });
 
 export function usePushNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,8 +40,12 @@ export function usePushNotifications() {
     });
 
     return () => {
-      if (notificationListener.current) Notifications.removeNotificationSubscription(notificationListener.current);
-      if (responseListener.current) Notifications.removeNotificationSubscription(responseListener.current);
+      if (notificationListener.current?.remove) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current?.remove) {
+        responseListener.current.remove();
+      }
     };
   }, []);
 
@@ -75,13 +79,17 @@ async function registerForPushNotificationsAsync() {
     try {
       const projectId = (Constants as any)?.expoConfig?.extra?.eas?.projectId ?? (Constants as any)?.easConfig?.projectId;
       if (!projectId) {
-         token = (await Notifications.getExpoPushTokenAsync()).data;
+         try {
+           token = (await Notifications.getExpoPushTokenAsync({ projectId: 'bf16467c-fc99-4d6d-8a58-861fbc6c06a3' })).data;
+         } catch (innerErr) {
+           console.log("Failed to get Expo token:", innerErr);
+         }
       } else {
          token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       }
-      console.log("Expo Push Token:", token);
+      if (token) console.log("Expo Push Token:", token);
     } catch (e: any) {
-      console.error(e?.message || e);
+      console.log('Skipping push tokens on dev client without project ID', e?.message);
     }
   } else {
     console.log('Must use physical device for Push Notifications');
