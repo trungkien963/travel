@@ -1,9 +1,11 @@
 -- 1. Enable Realtime Broadcasting
-ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+-- (Bỏ qua thêm vào publication nếu chúng đã được thêm từ trước để tránh lỗi)
 
 -- 2. Convert Data Types to JSONB for correct WebSockets Javascript Parsing
--- Chuyển đổi an toàn từ TEXT[] sang JSONB
+-- Chuyển đổi an toàn từ TEXT[] sang JSONB (Cần Drop Default trước khi cast)
+ALTER TABLE public.posts ALTER COLUMN likes DROP DEFAULT;
+ALTER TABLE public.posts ALTER COLUMN image_urls DROP DEFAULT;
+
 ALTER TABLE public.posts ALTER COLUMN likes TYPE jsonb USING array_to_json(likes)::jsonb;
 ALTER TABLE public.posts ALTER COLUMN image_urls TYPE jsonb USING array_to_json(image_urls)::jsonb;
 

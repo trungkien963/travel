@@ -237,7 +237,18 @@ export const useTravelStore = create<TravelState>()(
              });
            } else if (payload.eventType === 'UPDATE') {
              set((s) => ({
-               posts: s.posts.map(existing => existing.id === formattedPost.id ? formattedPost : existing)
+               posts: s.posts.map(existing => {
+                 if (existing.id !== p.id) return existing;
+                 return {
+                    ...existing,
+                    content: p.content !== undefined ? p.content : existing.content,
+                    images: p.image_urls !== undefined ? p.image_urls : existing.images,
+                    isDual: p.is_dual_camera !== undefined ? p.is_dual_camera : existing.isDual,
+                    likes: p.likes !== undefined ? (Array.isArray(p.likes) ? p.likes.length : 0) : existing.likes,
+                    hasLiked: p.likes !== undefined ? (Array.isArray(p.likes) ? p.likes.includes(state.currentUserId) : false) : existing.hasLiked,
+                    comments: p.comments !== undefined ? (Array.isArray(p.comments) ? p.comments : []) : existing.comments,
+                 };
+               })
              }));
            }
         };
