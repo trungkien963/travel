@@ -44,12 +44,12 @@ export function PostCommentsModal({ post, onClose, onAddComment }: PostCommentsM
                        {c.authorAvatar ? (
                          <Image source={{ uri: c.authorAvatar }} style={{width: '100%', height: '100%'}} />
                        ) : (
-                         <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 14}}>{c.authorName.charAt(0).toUpperCase()}</Text>
+                         <Text style={{fontWeight: '900', color: '#FFC800', fontSize: 14}}>{(c.authorName || 'Traveler').charAt(0).toUpperCase()}</Text>
                        )}
                     </View>
                     <View style={{flex: 1, backgroundColor: '#FBFBFB', padding: 14, borderRadius: 16}}>
                       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6}}>
-                         <Text style={{fontSize: 14, fontWeight: '900', color: '#1C1917'}}>{c.authorName}</Text>
+                         <Text style={{fontSize: 14, fontWeight: '900', color: '#1C1917'}}>{c.authorName || 'Traveler'}</Text>
                          <Text style={{fontSize: 11, fontWeight: '700', color: '#A8A29E'}}>{formatRelativeTime(c.timestamp)}</Text>
                       </View>
                       <Text style={{fontSize: 14, color: '#1C1917', lineHeight: 20}}>{c.text}</Text>
