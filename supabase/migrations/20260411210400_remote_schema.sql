@@ -43,13 +43,13 @@ alter table "public"."notifications" enable row level security;
     "trip_id" uuid,
     "user_id" uuid,
     "content" text,
-    "image_urls" text[] default '{}'::text[],
+    "image_urls" jsonb default '[]'::jsonb,
     "is_dual_camera" boolean default false,
     "created_at" timestamp with time zone not null default timezone('utc'::text, now()),
     "location_name" text,
     "location_city" text,
     "comments" jsonb default '[]'::jsonb,
-    "likes" text[] default '{}'::text[]
+    "likes" jsonb default '[]'::jsonb
       );
 
 
@@ -266,10 +266,10 @@ CREATE OR REPLACE FUNCTION public.toggle_post_like(p_post_id uuid, p_user_id tex
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
-  IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND p_user_id = ANY(likes)) THEN
-    UPDATE public.posts SET likes = array_remove(likes, p_user_id) WHERE id = p_post_id;
+  IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND likes @> jsonb_build_array(p_user_id)) THEN
+    UPDATE public.posts SET likes = likes - p_user_id WHERE id = p_post_id;
   ELSE
-    UPDATE public.posts SET likes = array_append(likes, p_user_id) WHERE id = p_post_id;
+    UPDATE public.posts SET likes = likes || jsonb_build_array(p_user_id) WHERE id = p_post_id;
   END IF;
 END;
 $function$
@@ -391,7 +391,7 @@ DECLARE
 BEGIN
     action_user_id := auth.uid(); -- Lấy ID của người đang chọt Like/Comment
 
-    IF COALESCE(array_length(NEW.likes, 1), 0) > COALESCE(array_length(OLD.likes, 1), 0) THEN
+    IF COALESCE(jsonb_array_length(NEW.likes), 0) > COALESCE(jsonb_array_length(OLD.likes), 0) THEN
         SELECT full_name, avatar_url INTO actor_name, actor_avatar FROM public.users WHERE id = action_user_id;
         
         -- Chỉ gửi nếu người thả tym không phải chủ bài đăng

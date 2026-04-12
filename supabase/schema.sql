@@ -62,9 +62,9 @@ CREATE TABLE public.posts (
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   expense_id UUID REFERENCES public.expenses(id) ON DELETE SET NULL,
   content TEXT,
-  image_urls TEXT[] DEFAULT '{}',
+  image_urls JSONB DEFAULT '[]'::jsonb,
   is_dual_camera BOOLEAN DEFAULT false,
-  likes TEXT[] DEFAULT '{}',
+  likes JSONB DEFAULT '[]'::jsonb,
   comments JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -74,10 +74,10 @@ CREATE TABLE public.posts (
 CREATE OR REPLACE FUNCTION toggle_post_like(p_post_id UUID, p_user_id TEXT)
 RETURNS void AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND p_user_id = ANY(likes)) THEN
-    UPDATE public.posts SET likes = array_remove(likes, p_user_id) WHERE id = p_post_id;
+  IF EXISTS (SELECT 1 FROM public.posts WHERE id = p_post_id AND likes @> jsonb_build_array(p_user_id)) THEN
+    UPDATE public.posts SET likes = likes - p_user_id WHERE id = p_post_id;
   ELSE
-    UPDATE public.posts SET likes = array_append(likes, p_user_id) WHERE id = p_post_id;
+    UPDATE public.posts SET likes = likes || jsonb_build_array(p_user_id) WHERE id = p_post_id;
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
