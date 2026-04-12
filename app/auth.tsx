@@ -118,7 +118,7 @@ export default function AuthScreen() {
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </Text>
           <Text style={{ fontSize: 15, color: '#78716C', textAlign: 'center' }}>
-            {isLogin ? 'Sign in to access your travel diaries.' : 'Join NomadSync to plan your next adventure.'}
+            {isLogin ? 'Sign in to access your travel diaries.' : 'Join WanderPool to plan your next adventure.'}
           </Text>
         </View>
 

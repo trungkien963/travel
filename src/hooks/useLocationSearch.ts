@@ -30,7 +30,7 @@ export function useLocationSearch() {
           {
             headers: {
                // Nominatim requires a user-agent
-               'User-Agent': 'NomadSyncTravelApp/1.0',
+               'User-Agent': 'WanderPoolTravelApp/1.0',
             }
           }
         );

@@ -74,7 +74,7 @@ export function PostItem({ post, isOwner, currentUserId, onLike, onComment, onDe
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out this amazing moment from ${post.authorName} on NomadSync! 🌊: "${post.content}"`,
+        message: `Check out this amazing moment from ${post.authorName} on WanderPool! 🌊: "${post.content}"`,
       });
     } catch (error) {
       console.error(error);

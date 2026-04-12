@@ -27,7 +27,7 @@ serve(async (req) => {
     }
 
     // Tự sinh cái Title tiếng việt dựa vào mã type cho đẹp
-    let title = "NomadSync"
+    let title = "WanderPool"
     if (type === 'POST_LIKE') title = "Có người thả tym ♥️"
     if (type === 'POST_COMMENT') title = "Có bình luận mới 💬"
     if (type === 'EXPENSE_ADDED') title = "Có bill mới vừa thêm 💸"

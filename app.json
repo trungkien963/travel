@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "travel-app",
-    "slug": "travel-app",
+    "name": "WanderPool",
+    "slug": "wanderpool",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
